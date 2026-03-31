@@ -84,6 +84,17 @@ export function BlockList() {
                     <path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" />
                   </svg>
                 )}
+                {isSelected && (
+                  <button
+                    onClick={e => { e.stopPropagation(); selectBlock(block.id); setShowBlockModal(true) }}
+                    className="shrink-0 p-1 rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors mt-0.5"
+                    title="편집"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                    </svg>
+                  </button>
+                )}
               </div>
             )
           })}
