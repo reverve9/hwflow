@@ -32,11 +32,18 @@ export function logout() {
   localStorage.removeItem(SESSION_KEY)
 }
 
+const SESSION_TTL_MS = 6 * 60 * 60 * 1000 // 6시간
+
 export function getSession(): Session | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY)
     if (!raw) return null
-    return JSON.parse(raw)
+    const session: Session = JSON.parse(raw)
+    if (Date.now() - new Date(session.loggedInAt).getTime() > SESSION_TTL_MS) {
+      localStorage.removeItem(SESSION_KEY)
+      return null
+    }
+    return session
   } catch {
     return null
   }
