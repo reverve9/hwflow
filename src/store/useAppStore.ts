@@ -25,6 +25,11 @@ function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }
 }
 
 function loadPresetData(id: string): StylePreset | null {
+  // localStorage에 저장된 커스텀 프리셋 우선
+  try {
+    const saved = localStorage.getItem(`hwflow_preset_${id}`)
+    if (saved) return JSON.parse(saved) as StylePreset
+  } catch {}
   const presets = loadPresetList()
   return presets.find(p => p.id === id)?.data ?? null
 }
@@ -105,6 +110,7 @@ interface AppState {
   anchorBlockID: string | null
 
   // UI 상태
+  presetVersion: number // 프리셋 저장 시 증가 → 미리보기 재렌더링 트리거
   isConverting: boolean
   conversionMessage: string
   showInspector: boolean
@@ -193,6 +199,7 @@ export const useAppStore = create<AppState>((set, get) => {
     irBlocks: [],
     selectedBlockIDs: new Set(),
     anchorBlockID: null,
+    presetVersion: 0,
     isConverting: false,
     conversionMessage: '',
     showInspector: true,
@@ -393,7 +400,7 @@ export const useAppStore = create<AppState>((set, get) => {
 
     reloadPresets: () => {
       const list = loadPresetList()
-      set({ availablePresets: list.map(p => ({ id: p.id, name: p.name })) })
+      set(s => ({ availablePresets: list.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
     },
 
     // Undo/Redo

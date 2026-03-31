@@ -20,7 +20,7 @@ export function StyleManager() {
   const {
     setShowStyleSettings, selectedPreset, setSelectedPreset, availablePresets,
     getPresetData, setAvailableStyleKeys, setStyleDisplayNames,
-    styleMapping, setStyleMapping,
+    styleMapping, setStyleMapping, reloadPresets,
   } = useAppStore()
 
   const [styles, setStyles] = useState<EditableStyle[]>([])
@@ -103,8 +103,9 @@ export function StyleManager() {
     localStorage.setItem(`hwflow_preset_${selectedPreset}`, JSON.stringify(data))
     setAvailableStyleKeys(styles.map(s => s.key))
     setStyleDisplayNames(Object.fromEntries(styles.map(s => [s.key, s.displayName])))
+    reloadPresets() // 미리보기 즉시 반영
     setSaveMessage('저장 완료')
-    setTimeout(() => setSaveMessage(''), 2000)
+    setTimeout(() => setSaveMessage(''), 3000)
   }
 
   const handleExport = () => {
@@ -143,7 +144,11 @@ export function StyleManager() {
         <ModalHeader title="스타일 매니저" onClose={close} onApply={handleSave} applyLabel="저장"
           extra={
             <div className="flex items-center gap-2 ml-3">
-              {saveMessage && <span className={`text-[11px] ${saveMessage.includes('완료') ? 'text-green-600' : 'text-red-500'}`}>{saveMessage}</span>}
+              {saveMessage && (
+                <span className={`text-[11px] px-2 py-0.5 rounded-md ${saveMessage.includes('완료') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                  {saveMessage.includes('완료') ? '✓ ' : ''}{saveMessage}
+                </span>
+              )}
             </div>
           }
         />

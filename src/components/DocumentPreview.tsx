@@ -14,7 +14,7 @@ export function DocumentPreview() {
   const {
     irBlocks, selectedBlockIDs, effectiveType, effectiveText,
     effectiveTableRows, effectiveHasHeader,
-    blockOverrides, getPresetData,
+    blockOverrides, getPresetData, presetVersion,
   } = useAppStore()
 
   const preset = getPresetData()
@@ -74,7 +74,7 @@ export function DocumentPreview() {
     if (page.length > 0) result.push(page)
     if (result.length === 0) result.push([])
     return result
-  }, [irBlocks, marginTop, marginBottom])
+  }, [irBlocks, marginTop, marginBottom, presetVersion])
 
   const borderLW = (b: { width: string }) => {
     switch (b.width) { case '0.7 mm': return 2; case '0.4 mm': return 1.5; case '0.25 mm': return 1; default: return 0.5 }
