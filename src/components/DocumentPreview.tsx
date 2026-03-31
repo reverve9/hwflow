@@ -192,9 +192,11 @@ export function DocumentPreview() {
         {pages.map((pageBlocks, pageIdx) => (
           <div key={pageIdx}>
             <div
-              className="bg-white shadow-md"
+              className="bg-white shadow-md relative"
               style={{ width: PAGE_W, minHeight: PAGE_H, paddingTop: marginTop, paddingBottom: marginBottom }}
             >
+              {/* 여백 꺾음 표시 */}
+              <MarginCorners top={marginTop} bottom={marginBottom} left={marginLeft} right={marginRight} />
               {pageBlocks.map(block => {
                 const eType = effectiveType(block)
                 const isSelected = selectedBlockIDs.has(block.id)
@@ -215,5 +217,37 @@ export function DocumentPreview() {
         ))}
       </div>
     </div>
+  )
+}
+
+/** 한글 스타일 여백 꺾음 표시 (4 모서리) */
+function MarginCorners({ top, bottom, left, right }: { top: number; bottom: number; left: number; right: number }) {
+  const L = 8 // 꺾음선 길이
+  const color = '#c0c0c0'
+  const style = { position: 'absolute' as const, pointerEvents: 'none' as const }
+
+  return (
+    <>
+      {/* 좌상 */}
+      <div style={{ ...style, top, left }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: L, backgroundColor: color }} />
+      </div>
+      {/* 우상 */}
+      <div style={{ ...style, top, right }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
+      </div>
+      {/* 좌하 */}
+      <div style={{ ...style, bottom, left }}>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: 1, height: L, backgroundColor: color }} />
+      </div>
+      {/* 우하 */}
+      <div style={{ ...style, bottom, right }}>
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
+      </div>
+    </>
   )
 }
