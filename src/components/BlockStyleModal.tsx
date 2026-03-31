@@ -40,7 +40,7 @@ export function BlockStyleModal({ block }: Props) {
   const loadDefaultForType = () => setOverrideStyle(styleFor(selectedType))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={close}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
       <div className="bg-[#f5f5f5] rounded-xl shadow-2xl w-[500px] max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-[#f5f5f5] border-b border-app-border">

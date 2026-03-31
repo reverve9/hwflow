@@ -165,7 +165,7 @@ export function TableEditModal({ block }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={close}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
       <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(90vw, 1050px)', height: 'min(85vh, 780px)' }} onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-app-border shrink-0">
