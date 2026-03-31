@@ -7,6 +7,7 @@ interface Props {
 
 export function LoginPage({ onLogin }: Props) {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -15,9 +16,8 @@ export function LoginPage({ onLogin }: Props) {
     setLoading(true)
     setError('')
 
-    // 약간의 딜레이 (실제 API 호출 느낌)
     setTimeout(() => {
-      const result = login(email)
+      const result = login(email, password)
       if (result.ok) {
         onLogin()
       } else {
@@ -52,13 +52,25 @@ export function LoginPage({ onLogin }: Props) {
               />
             </div>
 
+            <div>
+              <label className="text-[11px] font-medium text-gray-500 block mb-1.5">비밀번호</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError('') }}
+                placeholder="비밀번호"
+                autoComplete="current-password"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 placeholder:text-gray-300 outline-none focus:border-navy-400 focus:ring-2 focus:ring-navy-100 transition-all"
+              />
+            </div>
+
             {error && (
               <p className="text-[11px] text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
             )}
 
             <button
               type="submit"
-              disabled={loading || !email.trim()}
+              disabled={loading || !email.trim() || !password}
               className="w-full py-2.5 rounded-lg bg-navy-600 text-white text-[13px] font-medium hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {loading ? '확인 중...' : '로그인'}

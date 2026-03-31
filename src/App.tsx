@@ -78,8 +78,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-app-bg">
-      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)}
-        onLogout={() => { logout(); setAuthed(false) }} />
+      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)} />
 
       {/* 임시저장 복원 배너 */}
       {draftBanner && (
@@ -137,7 +136,7 @@ export default function App() {
           : <BlockStyleModal block={block} />
       )}
       {showStyleSettings && <StyleManager />}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onLogout={() => { logout(); setAuthed(false) }} />}
 
       {/* 새 창 미리보기 */}
       {showPreviewWindow && hasBlocks && (

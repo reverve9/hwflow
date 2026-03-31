@@ -5,21 +5,23 @@
 const SESSION_KEY = 'hwflow_session'
 
 // TODO: Supabase Auth 연동 시 제거
-const ALLOWED_EMAILS = [
-  'admin@hwflow.kr',
-  'test@hwflow.kr',
-]
+const ACCOUNTS: Record<string, string> = {
+  'reverve9@naver.com': '123456',
+  'ahnsujung@korea.kr': 'spahspah512!',
+}
 
 export interface Session {
   email: string
   loggedInAt: string
 }
 
-export function login(email: string): { ok: boolean; error?: string } {
+export function login(email: string, password: string): { ok: boolean; error?: string } {
   const normalized = email.trim().toLowerCase()
   if (!normalized) return { ok: false, error: '이메일을 입력해주세요.' }
-  if (!ALLOWED_EMAILS.includes(normalized)) {
-    return { ok: false, error: '등록되지 않은 이메일입니다.' }
+  if (!password) return { ok: false, error: '비밀번호를 입력해주세요.' }
+  const expected = ACCOUNTS[normalized]
+  if (!expected || expected !== password) {
+    return { ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' }
   }
   const session: Session = { email: normalized, loggedInAt: new Date().toISOString() }
   localStorage.setItem(SESSION_KEY, JSON.stringify(session))
