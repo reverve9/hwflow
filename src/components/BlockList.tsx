@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock } from '@/store/types'
 
@@ -28,6 +28,7 @@ export function BlockList() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const anchorBlockID = useAppStore(s => s.anchorBlockID)
+  const [dragAnchorId, setDragAnchorId] = useState<string | null>(null)
 
   // 선택 블록 스크롤
   useEffect(() => {
@@ -45,6 +46,24 @@ export function BlockList() {
     selectBlock(block.id)
     setShowBlockModal(true)
   }, [selectBlock, setShowBlockModal])
+
+  // 드래그 멀티셀렉
+  const handleMouseDown = useCallback((e: React.MouseEvent, block: IRBlock) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+    setDragAnchorId(block.id)
+  }, [])
+
+  const handleMouseEnter = useCallback((block: IRBlock) => {
+    if (!dragAnchorId) return
+    selectBlock(block.id, { shift: true })
+  }, [dragAnchorId, selectBlock])
+
+  useEffect(() => {
+    if (!dragAnchorId) return
+    const handleUp = () => setDragAnchorId(null)
+    window.addEventListener('mouseup', handleUp)
+    return () => window.removeEventListener('mouseup', handleUp)
+  }, [dragAnchorId])
 
   const selected = getSelectedBlock()
 
@@ -65,11 +84,13 @@ export function BlockList() {
                 data-block-id={block.id}
                 onClick={e => handleClick(e, block)}
                 onDoubleClick={() => handleDoubleClick(block)}
+                onMouseDown={e => handleMouseDown(e, block)}
+                onMouseEnter={() => handleMouseEnter(block)}
                 onContextMenu={e => {
                   e.preventDefault()
                   selectBlock(block.id)
                 }}
-                className={`flex items-start gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors
+                className={`flex items-start gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors select-none
                   ${isSelected ? 'bg-navy-50 ring-1 ring-navy-200' : 'hover:bg-navy-50/50'}`}
                 style={{ paddingLeft: `${config.indent * 16 + 8}px` }}
               >
