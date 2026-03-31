@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, CellBorder, CellBorders, BorderPreset } from '@/store/types'
 import { SOLID_BORDERS, DEFAULT_CELL_BORDER, NONE_CELL_BORDER } from '@/store/types'
+import { Modal, ModalHeader } from './Modal'
 
 interface CellIndex { row: number; col: number }
 function cellKey(c: CellIndex) { return `${c.row},${c.col}` }
@@ -350,33 +351,19 @@ export function TableEditModal({ block }: Props) {
   }
 
   // ─── 렌더링 ────────────────────────────────────────────
+  const cellInfoText = (() => {
+    if (!primaryCell || selectedCells.size === 0) return undefined
+    if (cellMerge[primaryCell.row]?.[primaryCell.col]?.merged) return undefined
+    const m = cellMerge[primaryCell.row][primaryCell.col]
+    if (m.colspan > 1 || m.rowspan > 1) return `병합 셀 [${primaryCell.row + 1},${primaryCell.col + 1}] ${m.rowspan}×${m.colspan}`
+    if (selectedCells.size > 1) return `${selectedCells.size}개 셀 선택`
+    return `셀 [${primaryCell.row + 1}, ${primaryCell.col + 1}]`
+  })()
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
-      <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(85vw, 880px)', height: 'min(85vh, 720px)' }} onClick={e => e.stopPropagation()}>
-        {/* 헤더 */}
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-app-border shrink-0">
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-semibold text-navy-800">표 편집</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[11px] text-app-muted">{rowCount} × {colCount}</span>
-              {selectedCells.size >= 1 && primaryCell && !cellMerge[primaryCell.row][primaryCell.col].merged && (
-                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">
-                  {cellMerge[primaryCell.row][primaryCell.col].colspan > 1 || cellMerge[primaryCell.row][primaryCell.col].rowspan > 1
-                    ? `병합 셀 [${primaryCell.row + 1},${primaryCell.col + 1}] ${cellMerge[primaryCell.row][primaryCell.col].rowspan}×${cellMerge[primaryCell.row][primaryCell.col].colspan}`
-                    : selectedCells.size > 1
-                      ? `${selectedCells.size}개 셀 선택`
-                      : `셀 [${primaryCell.row + 1}, ${primaryCell.col + 1}]`
-                  }
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex-1" />
-          <div className="flex gap-2 shrink-0">
-            <button onClick={close} className="px-3 py-1 text-[12px] rounded-md border border-app-border text-navy-600 hover:bg-white transition-colors">취소</button>
-            <button onClick={apply} className="px-3 py-1 text-[12px] rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors shadow-sm">적용</button>
-          </div>
-        </div>
+    <Modal onClose={close} width="880px" height="720px">
+        <ModalHeader title="표 편집" subtitle={`${rowCount} × ${colCount}${cellInfoText ? `  —  ${cellInfoText}` : ''}`}
+          onClose={close} onApply={apply} />
 
         {/* 툴바 */}
         <div className="flex items-center gap-2 px-5 py-2 border-b border-app-border/50 shrink-0">
@@ -578,7 +565,6 @@ export function TableEditModal({ block }: Props) {
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

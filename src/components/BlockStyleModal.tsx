@@ -3,6 +3,7 @@ import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS } from '@/store/types'
 import { useFontList } from '@/lib/fonts'
+import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass } from './Modal'
 
 interface Props {
   block: IRBlock
@@ -40,19 +41,8 @@ export function BlockStyleModal({ block }: Props) {
   const loadDefaultForType = () => setOverrideStyle(styleFor(selectedType))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
-      <div className="bg-[#f5f5f5] rounded-xl shadow-2xl w-[500px] max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-[#f5f5f5] border-b border-app-border">
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-semibold text-navy-800">블록 수정</h3>
-            <p className="text-[11px] text-app-muted truncate max-w-[280px] mt-0.5">{block.text.slice(0, 60)}</p>
-          </div>
-          <div className="flex gap-2 shrink-0 ml-4">
-            <button onClick={close} className="px-3 py-1 text-[12px] rounded-md border border-app-border text-navy-600 hover:bg-white transition-colors">취소</button>
-            <button onClick={apply} className="px-3 py-1 text-[12px] rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors shadow-sm">적용</button>
-          </div>
-        </div>
+    <Modal onClose={close} width="500px" height="auto">
+        <ModalHeader title="블록 수정" subtitle={block.text.slice(0, 60)} onClose={close} onApply={apply} />
 
         {/* 본문 */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -185,8 +175,7 @@ export function BlockStyleModal({ block }: Props) {
             )}
           </section>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
