@@ -23,6 +23,9 @@ export interface IRTableCell {
   valign: 'top' | 'center' | 'bottom'
   bgColor: string | null // "#RRGGBB" or null
   borders: CellBorders
+  colspan?: number  // default 1
+  rowspan?: number  // default 1
+  merged?: boolean  // true = 다른 셀의 span에 의해 가려진 셀
 }
 
 export type BlockType = 'heading1' | 'heading2' | 'heading3' | 'heading4' | 'body' | 'table' | string

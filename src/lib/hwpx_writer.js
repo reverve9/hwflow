@@ -588,6 +588,12 @@ export class HwpxWriter {
       for (let cIdx = 0; cIdx < colCount; cIdx++) {
         const cell = cIdx < row.length ? row[cIdx] : {};
 
+        // 병합에 의해 가려진 셀은 skip
+        if (cell.merged) continue;
+
+        const cs = cell.colspan || 1;
+        const rs = cell.rowspan || 1;
+
         // 셀별 배경색 결정
         let cellBg = cell.bg_color || null;
         if (cellBg === null && isHeaderRow) cellBg = headerColor;
@@ -640,8 +646,8 @@ export class HwpxWriter {
         xml += '</hp:p>';
         xml += '</hp:subList>';
         xml += `<hp:cellAddr colAddr="${cIdx}" rowAddr="${rIdx}"/>`;
-        xml += '<hp:cellSpan colSpan="1" rowSpan="1"/>';
-        xml += `<hp:cellSz width="${colWidth}" height="${rowHeight}"/>`;
+        xml += `<hp:cellSpan colSpan="${cs}" rowSpan="${rs}"/>`;
+        xml += `<hp:cellSz width="${colWidth * cs}" height="${rowHeight * rs}"/>`;
         xml += `<hp:cellMargin left="${cellMl}" right="${cellMr}" top="${cellMt}" bottom="${cellMb}"/>`;
         xml += '</hp:tc>';
       }

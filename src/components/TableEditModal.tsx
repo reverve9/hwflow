@@ -1,12 +1,18 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, CellBorder, CellBorders, BorderPreset } from '@/store/types'
-import { SOLID_BORDERS, DEFAULT_CELL_BORDER, NONE_CELL_BORDER, THICK_CELL_BORDER } from '@/store/types'
+import { SOLID_BORDERS, DEFAULT_CELL_BORDER, NONE_CELL_BORDER } from '@/store/types'
 
 interface CellIndex { row: number; col: number }
 function cellKey(c: CellIndex) { return `${c.row},${c.col}` }
 
 interface Props { block: IRBlock }
+
+interface MergeInfo {
+  colspan: number
+  rowspan: number
+  merged: boolean // 다른 셀에 의해 가려진 셀
+}
 
 const BG_COLORS: (string | null)[] = [
   null, '#D8D8D8', '#E8F5E9', '#FFF3E0', '#E3F2FD', '#FCE4EC',
@@ -47,6 +53,13 @@ export function TableEditModal({ block }: Props) {
   const [cellValigns, setCellValigns] = useState(() => initRows.map(r => r.map(c => c.valign)))
   const [cellBgColors, setCellBgColors] = useState(() => initRows.map(r => r.map(c => c.bgColor)))
   const [cellBorders, setCellBorders] = useState(() => initRows.map(r => r.map(c => ({ ...c.borders }))))
+  const [cellMerge, setCellMerge] = useState<MergeInfo[][]>(() =>
+    initRows.map(r => r.map(c => ({
+      colspan: c.colspan ?? 1,
+      rowspan: c.rowspan ?? 1,
+      merged: c.merged ?? false,
+    })))
+  )
   const [hasHeader, setHasHeader] = useState(() => effectiveHasHeader(block))
   const [lineType, setLineType] = useState<CellBorder['type']>('SOLID')
   const [lineWidth, setLineWidth] = useState('0.12 mm')
@@ -59,15 +72,18 @@ export function TableEditModal({ block }: Props) {
 
   const close = () => setShowBlockModal(false)
 
+  // ─── 적용 ──────────────────────────────────────────────
   const apply = () => {
     const rows: IRTableCell[][] = []
     for (let r = 0; r < rowCount; r++) {
       const row: IRTableCell[] = []
       for (let c = 0; c < colCount; c++) {
+        const m = cellMerge[r][c]
         row.push({
           runs: [{ text: cellTexts[r][c], bold: cellBolds[r][c] }],
           align: cellAligns[r][c], valign: cellValigns[r][c],
           bgColor: cellBgColors[r][c], borders: cellBorders[r][c],
+          colspan: m.colspan, rowspan: m.rowspan, merged: m.merged,
         })
       }
       rows.push(row)
@@ -84,19 +100,59 @@ export function TableEditModal({ block }: Props) {
     }
   }, [selectedCells, rowCount, colCount])
 
+  // ─── 셀 선택 (merged 셀 클릭 시 owner로 리다이렉트) ───
+  const findOwner = (row: number, col: number): CellIndex => {
+    if (!cellMerge[row][col].merged) return { row, col }
+    for (let r = row; r >= 0; r--) {
+      for (let c = col; c >= 0; c--) {
+        const m = cellMerge[r][c]
+        if (!m.merged && r + m.rowspan > row && c + m.colspan > col) return { row: r, col: c }
+      }
+    }
+    return { row, col }
+  }
+
   const selectCell = (row: number, col: number, shift: boolean) => {
-    const idx: CellIndex = { row, col }
+    const owner = findOwner(row, col)
     if (shift && anchorCell) {
-      const rMin = Math.min(anchorCell.row, row), rMax = Math.max(anchorCell.row, row)
-      const cMin = Math.min(anchorCell.col, col), cMax = Math.max(anchorCell.col, col)
+      const rMin = Math.min(anchorCell.row, owner.row), rMax = Math.max(anchorCell.row, owner.row)
+      const cMin = Math.min(anchorCell.col, owner.col), cMax = Math.max(anchorCell.col, owner.col)
+      // 병합 영역에 걸치면 확장
+      const [eRMin, eRMax, eCMin, eCMax] = expandSelectionToMerge(rMin, rMax, cMin, cMax)
       const next = new Set<string>()
-      for (let r = rMin; r <= rMax; r++) for (let c = cMin; c <= cMax; c++) next.add(cellKey({ row: r, col: c }))
+      for (let r = eRMin; r <= eRMax; r++) for (let c = eCMin; c <= eCMax; c++) next.add(cellKey({ row: r, col: c }))
       setSelectedCells(next)
     } else {
-      setSelectedCells(new Set([cellKey(idx)]))
-      setAnchorCell(idx)
+      // 단일 클릭: owner의 전체 span 영역 선택
+      const m = cellMerge[owner.row][owner.col]
+      const next = new Set<string>()
+      for (let r = owner.row; r < owner.row + m.rowspan; r++)
+        for (let c = owner.col; c < owner.col + m.colspan; c++)
+          next.add(cellKey({ row: r, col: c }))
+      setSelectedCells(next)
+      setAnchorCell(owner)
     }
     setEditingCell(null)
+  }
+
+  // 선택 영역이 병합 셀에 걸치면 확장
+  const expandSelectionToMerge = (rMin: number, rMax: number, cMin: number, cMax: number): [number, number, number, number] => {
+    let changed = true
+    let [r0, r1, c0, c1] = [rMin, rMax, cMin, cMax]
+    while (changed) {
+      changed = false
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) {
+          const owner = findOwner(r, c)
+          const m = cellMerge[owner.row][owner.col]
+          if (owner.row < r0) { r0 = owner.row; changed = true }
+          if (owner.row + m.rowspan - 1 > r1) { r1 = owner.row + m.rowspan - 1; changed = true }
+          if (owner.col < c0) { c0 = owner.col; changed = true }
+          if (owner.col + m.colspan - 1 > c1) { c1 = owner.col + m.colspan - 1; changed = true }
+        }
+      }
+    }
+    return [r0, r1, c0, c1]
   }
 
   const primaryCell = (() => {
@@ -104,17 +160,100 @@ export function TableEditModal({ block }: Props) {
     const first = [...selectedCells][0]
     if (!first) return null
     const [r, c] = first.split(',').map(Number)
-    return { row: r, col: c }
+    return findOwner(r, c)
   })()
 
-  // 행/열 추가/삭제
+  // ─── 병합 / 분할 ──────────────────────────────────────
+  const getSelectionBounds = (): [number, number, number, number] | null => {
+    if (selectedCells.size === 0) return null
+    const cells = [...selectedCells].map(k => k.split(',').map(Number))
+    return [
+      Math.min(...cells.map(c => c[0])), Math.max(...cells.map(c => c[0])),
+      Math.min(...cells.map(c => c[1])), Math.max(...cells.map(c => c[1])),
+    ]
+  }
+
+  const canMerge = (): boolean => {
+    const bounds = getSelectionBounds()
+    if (!bounds) return false
+    const [rMin, rMax, cMin, cMax] = bounds
+    const expectedCount = (rMax - rMin + 1) * (cMax - cMin + 1)
+    if (selectedCells.size !== expectedCount || expectedCount <= 1) return false
+    return true
+  }
+
+  const canSplit = (): boolean => {
+    if (!primaryCell) return false
+    const m = cellMerge[primaryCell.row][primaryCell.col]
+    return (m.colspan > 1 || m.rowspan > 1) && !m.merged
+  }
+
+  const mergeCells = () => {
+    const bounds = getSelectionBounds()
+    if (!bounds) return
+    const [rMin, rMax, cMin, cMax] = bounds
+
+    // 텍스트 합치기 (비어있지 않은 셀만)
+    const texts: string[] = []
+    for (let r = rMin; r <= rMax; r++)
+      for (let c = cMin; c <= cMax; c++) {
+        const t = cellTexts[r][c].trim()
+        if (t) texts.push(t)
+      }
+
+    setCellTexts(p => {
+      const n = p.map(r => [...r])
+      n[rMin][cMin] = texts.join(' ')
+      for (let r = rMin; r <= rMax; r++)
+        for (let c = cMin; c <= cMax; c++)
+          if (r !== rMin || c !== cMin) n[r][c] = ''
+      return n
+    })
+
+    setCellMerge(p => {
+      const n = p.map(r => r.map(c => ({ ...c })))
+      n[rMin][cMin] = { colspan: cMax - cMin + 1, rowspan: rMax - rMin + 1, merged: false }
+      for (let r = rMin; r <= rMax; r++)
+        for (let c = cMin; c <= cMax; c++)
+          if (r !== rMin || c !== cMin) n[r][c] = { colspan: 1, rowspan: 1, merged: true }
+      return n
+    })
+
+    // anchor 셀만 선택
+    const next = new Set<string>()
+    for (let r = rMin; r <= rMax; r++)
+      for (let c = cMin; c <= cMax; c++) next.add(cellKey({ row: r, col: c }))
+    setSelectedCells(next)
+    setAnchorCell({ row: rMin, col: cMin })
+  }
+
+  const splitCells = () => {
+    if (!primaryCell) return
+    const m = cellMerge[primaryCell.row][primaryCell.col]
+    const { row: rMin, col: cMin } = primaryCell
+    const rMax = rMin + m.rowspan - 1
+    const cMax = cMin + m.colspan - 1
+
+    setCellMerge(p => {
+      const n = p.map(r => r.map(c => ({ ...c })))
+      for (let r = rMin; r <= rMax; r++)
+        for (let c = cMin; c <= cMax; c++)
+          n[r][c] = { colspan: 1, rowspan: 1, merged: false }
+      return n
+    })
+
+    setSelectedCells(new Set([cellKey(primaryCell)]))
+  }
+
+  // ─── 행/열 추가 ────────────────────────────────────────
   const addRow = () => {
     setCellTexts(p => [...p, Array(colCount).fill('')])
     setCellBolds(p => [...p, Array(colCount).fill(false)])
     setCellAligns(p => [...p, Array(colCount).fill('left') as IRTableCell['align'][]])
     setCellValigns(p => [...p, Array(colCount).fill('center') as IRTableCell['valign'][]])
     setCellBgColors(p => [...p, Array(colCount).fill(null)])
-    setCellBorders(p => [...p, Array.from({ length: colCount }, () => ({ ...SOLID_BORDERS, top: { ...DEFAULT_CELL_BORDER }, bottom: { ...DEFAULT_CELL_BORDER }, left: { ...DEFAULT_CELL_BORDER }, right: { ...DEFAULT_CELL_BORDER } }))])
+    setCellBorders(p => [...p, Array.from({ length: colCount }, () => ({ top: { ...DEFAULT_CELL_BORDER }, bottom: { ...DEFAULT_CELL_BORDER }, left: { ...DEFAULT_CELL_BORDER }, right: { ...DEFAULT_CELL_BORDER } }))])
+    setCellMerge(p => [...p, Array.from({ length: colCount }, () => ({ colspan: 1, rowspan: 1, merged: false }))])
   }
   const addCol = () => {
     setCellTexts(p => p.map(r => [...r, '']))
@@ -123,9 +262,10 @@ export function TableEditModal({ block }: Props) {
     setCellValigns(p => p.map(r => [...r, 'center' as const]))
     setCellBgColors(p => p.map(r => [...r, null]))
     setCellBorders(p => p.map(r => [...r, { top: { ...DEFAULT_CELL_BORDER }, bottom: { ...DEFAULT_CELL_BORDER }, left: { ...DEFAULT_CELL_BORDER }, right: { ...DEFAULT_CELL_BORDER } }]))
+    setCellMerge(p => p.map(r => [...r, { colspan: 1, rowspan: 1, merged: false }]))
   }
 
-  // 테두리 프리셋 적용
+  // ─── 테두리 프리셋 ────────────────────────────────────
   const applyPreset = (preset: BorderPreset) => {
     const f = getFlags(preset)
     const line: CellBorder = { type: lineType, width: lineWidth }
@@ -164,6 +304,7 @@ export function TableEditModal({ block }: Props) {
     switch (b.width) { case '0.7 mm': return 3; case '0.4 mm': return 2; case '0.25 mm': return 1.5; default: return 1 }
   }
 
+  // ─── 렌더링 ────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
       <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(90vw, 1050px)', height: 'min(85vh, 780px)' }} onClick={e => e.stopPropagation()}>
@@ -173,11 +314,15 @@ export function TableEditModal({ block }: Props) {
             <h3 className="text-[13px] font-semibold text-navy-800">표 편집</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[11px] text-app-muted">{rowCount} × {colCount}</span>
-              {selectedCells.size === 1 && primaryCell && (
-                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">셀 [{primaryCell.row + 1}, {primaryCell.col + 1}]</span>
-              )}
-              {selectedCells.size > 1 && (
-                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">{selectedCells.size}개 셀 선택</span>
+              {selectedCells.size >= 1 && primaryCell && !cellMerge[primaryCell.row][primaryCell.col].merged && (
+                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">
+                  {cellMerge[primaryCell.row][primaryCell.col].colspan > 1 || cellMerge[primaryCell.row][primaryCell.col].rowspan > 1
+                    ? `병합 셀 [${primaryCell.row + 1},${primaryCell.col + 1}] ${cellMerge[primaryCell.row][primaryCell.col].rowspan}×${cellMerge[primaryCell.row][primaryCell.col].colspan}`
+                    : selectedCells.size > 1
+                      ? `${selectedCells.size}개 셀 선택`
+                      : `셀 [${primaryCell.row + 1}, ${primaryCell.col + 1}]`
+                  }
+                </span>
               )}
             </div>
           </div>
@@ -189,11 +334,18 @@ export function TableEditModal({ block }: Props) {
         </div>
 
         {/* 툴바 */}
-        <div className="flex items-center gap-3 px-5 py-2 border-b border-app-border/50 shrink-0">
+        <div className="flex items-center gap-2 px-5 py-2 border-b border-app-border/50 shrink-0">
           <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-navy-700">
             <input type="checkbox" checked={hasHeader} onChange={e => setHasHeader(e.target.checked)} className="accent-navy-500" />
             첫 행 헤더
           </label>
+          <div className="w-px h-4 bg-app-border" />
+          {canMerge() && (
+            <button onClick={mergeCells} className="px-2 py-1 bg-navy-600 text-white rounded-md text-[11px] hover:bg-navy-700 transition-colors">셀 병합</button>
+          )}
+          {canSplit() && (
+            <button onClick={splitCells} className="px-2 py-1 bg-orange-500 text-white rounded-md text-[11px] hover:bg-orange-600 transition-colors">셀 분할</button>
+          )}
           <div className="w-px h-4 bg-app-border" />
           <button onClick={addRow} className="px-2 py-1 border border-app-border rounded-md text-[11px] text-navy-600 hover:bg-white transition-colors">+ 행</button>
           <button onClick={addCol} className="px-2 py-1 border border-app-border rounded-md text-[11px] text-navy-600 hover:bg-white transition-colors">+ 열</button>
@@ -215,16 +367,22 @@ export function TableEditModal({ block }: Props) {
                     <tr key={r}>
                       <td className="text-[10px] text-app-muted pr-2 align-middle select-none">{r + 1}</td>
                       {Array.from({ length: colCount }, (_, c) => {
+                        const merge = cellMerge[r][c]
+                        if (merge.merged) return null
+
                         const isHeader = hasHeader && r === 0
                         const isEditing = editingCell?.row === r && editingCell?.col === c
                         const isSelected = selectedCells.has(cellKey({ row: r, col: c }))
                         const bold = cellBolds[r][c] || isHeader
                         const bg = cellBgColors[r][c] ?? (isHeader ? '#e5e7eb' : '#ffffff')
                         const borders = cellBorders[r][c]
+                        const isMerged = merge.colspan > 1 || merge.rowspan > 1
 
                         return (
                           <td
                             key={c}
+                            colSpan={merge.colspan > 1 ? merge.colspan : undefined}
+                            rowSpan={merge.rowspan > 1 ? merge.rowspan : undefined}
                             className={`relative min-w-[80px] p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
                             style={{ backgroundColor: bg }}
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
@@ -234,6 +392,13 @@ export function TableEditModal({ block }: Props) {
                             {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.bottom) }} />}
                             {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
                             {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.right) }} />}
+
+                            {/* 병합 표시 */}
+                            {isMerged && (
+                              <div className="absolute top-0.5 right-1 text-[8px] text-navy-400 select-none">
+                                {merge.rowspan}×{merge.colspan}
+                              </div>
+                            )}
 
                             {isEditing ? (
                               <input
@@ -328,13 +493,11 @@ export function TableEditModal({ block }: Props) {
             </div>
 
             {/* 셀 속성 */}
-            {primaryCell && primaryCell.row < rowCount && primaryCell.col < colCount && (
+            {primaryCell && primaryCell.row < rowCount && primaryCell.col < colCount && !cellMerge[primaryCell.row][primaryCell.col].merged && (
               <>
                 <hr className="border-app-border/50" />
                 <div>
-                  <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">
-                    셀 속성{selectedCells.size > 1 ? ` (${selectedCells.size}개)` : ''}
-                  </div>
+                  <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">셀 속성</div>
                   <label className="flex items-center gap-1.5 mb-2.5 cursor-pointer">
                     <input type="checkbox" checked={cellBolds[primaryCell.row][primaryCell.col]}
                       onChange={e => forEachSelected((r, c) => setCellBolds(p => { const n = p.map(r => [...r]); n[r][c] = e.target.checked; return n }))}

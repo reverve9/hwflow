@@ -55,6 +55,9 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
             valign: (item.valign as IRTableCell['valign']) ?? 'center',
             bgColor: (item.bg_color as string) ?? null,
             borders: parseBorders(item.borders as Record<string, Record<string, string>> | undefined),
+            colspan: (item.colspan as number) ?? 1,
+            rowspan: (item.rowspan as number) ?? 1,
+            merged: (item.merged as boolean) ?? false,
           }
         })
       )

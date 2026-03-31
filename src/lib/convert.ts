@@ -66,6 +66,9 @@ export async function convertToHwpx(store: StoreState) {
               valign: cell.valign,
               bg_color: cell.bgColor,
               borders: cell.borders,
+              colspan: cell.colspan ?? 1,
+              rowspan: cell.rowspan ?? 1,
+              merged: cell.merged ?? false,
             }))
           ),
         }

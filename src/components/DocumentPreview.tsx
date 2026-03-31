@@ -152,9 +152,14 @@ export function DocumentPreview() {
                 <tr key={rIdx}>
                   {Array.from({ length: colCount }, (_, cIdx) => {
                     const cell = row[cIdx] ?? { runs: [], align: 'left', valign: 'center', bgColor: null, borders: { top: { type: 'SOLID', width: '0.12 mm' }, bottom: { type: 'SOLID', width: '0.12 mm' }, left: { type: 'SOLID', width: '0.12 mm' }, right: { type: 'SOLID', width: '0.12 mm' } } }
+                    if (cell.merged) return null
+                    const cs = cell.colspan ?? 1
+                    const rs = cell.rowspan ?? 1
                     const bg = cell.bgColor ?? (isHeader ? tableHeadColor : undefined)
                     return (
-                      <td key={cIdx} className="relative p-0" style={{ backgroundColor: bg }}>
+                      <td key={cIdx} className="relative p-0"
+                        colSpan={cs > 1 ? cs : undefined} rowSpan={rs > 1 ? rs : undefined}
+                        style={{ backgroundColor: bg }}>
                         {cell.borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: borderLW(cell.borders.top) }} />}
                         {cell.borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: borderLW(cell.borders.bottom) }} />}
                         {cell.borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: borderLW(cell.borders.left) }} />}
