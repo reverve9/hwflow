@@ -18,10 +18,6 @@ import { getSession, logout } from '@/lib/auth'
 
 export default function App() {
   const [authed, setAuthed] = useState(() => !!getSession())
-
-  if (!authed) {
-    return <LoginPage onLogin={() => setAuthed(true)} />
-  }
   const {
     inputMode, irBlocks, showInspector, showSplitPreview,
     showBlockModal, showStyleSettings,
@@ -39,22 +35,17 @@ export default function App() {
   // 시작 시 임시저장 복원 제안
   const initRef = useRef(false)
   useEffect(() => {
-    if (initRef.current) return
+    if (initRef.current || !authed) return
     initRef.current = true
     if (hasDraft() && irBlocks.length === 0) {
       const d = loadDraft()
       if (d) setDraftBanner(formatDraftTime(d.savedAt))
     }
-  }, [])
-
-  const handleRestoreDraft = () => {
-    const d = loadDraft()
-    if (d) useAppStore.getState().restoreDraft(d)
-    setDraftBanner(null)
-  }
+  }, [authed])
 
   // 자동 임시저장
   useEffect(() => {
+    if (!authed) return
     const settings = loadSettings()
     if (!settings.autoSave) return
     const timer = setInterval(() => {
@@ -74,7 +65,17 @@ export default function App() {
       })
     }, settings.autoSaveInterval * 1000)
     return () => clearInterval(timer)
-  }, [showSettings]) // showSettings 변경 시 리로드 (설정 변경 반영)
+  }, [authed, showSettings])
+
+  const handleRestoreDraft = () => {
+    const d = loadDraft()
+    if (d) useAppStore.getState().restoreDraft(d)
+    setDraftBanner(null)
+  }
+
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />
+  }
 
   return (
     <div className="flex flex-col h-screen bg-app-bg">
