@@ -20,37 +20,53 @@ export const SUPPORTED_FONTS: FontEntry[] = [
 ]
 
 /**
- * Canvas 기반 시스템 폰트 감지 (3-baseline 비교)
+ * 시스템 폰트 감지
  *
- * 단일 fallback과 비교하면 한글 텍스트의 fallback 치환이
- * 동일한 폰트로 되어 false-negative가 발생한다.
- * serif, sans-serif, monospace 3개 baseline과 비교하여
- * 하나라도 width가 다르면 해당 폰트가 설치된 것으로 판정.
+ * 1차: document.fonts.check() — CSS Font Loading API
+ * 2차: DOM span 실측 — 실제 렌더링 파이프라인 사용
+ *
+ * Canvas measureText는 Safari/Chrome fingerprinting 방어로
+ * 시스템 폰트 감지가 안 되므로 사용하지 않는다.
  */
 function detectFont(fontName: string): boolean {
+  // 1) CSS Font Loading API
   try {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return false
+    if (document.fonts?.check(`72px "${fontName}"`, '가나다ABC')) {
+      return true
+    }
+  } catch { /* 미지원 브라우저 무시 */ }
 
+  // 2) DOM span 실측 (getBoundingClientRect)
+  try {
     const testStr = '아버지가방에들어가신다ABCabc123'
-    const size = '72px'
+    const span = document.createElement('span')
+    span.style.cssText =
+      'position:absolute;left:-9999px;top:-9999px;font-size:72px;' +
+      'visibility:hidden;white-space:nowrap;'
+    span.textContent = testStr
+    document.body.appendChild(span)
+
     const baselines = ['serif', 'sans-serif', 'monospace'] as const
+    let detected = false
 
     for (const base of baselines) {
-      ctx.font = `${size} ${base}`
-      const baseWidth = ctx.measureText(testStr).width
+      span.style.fontFamily = base
+      const baseWidth = span.getBoundingClientRect().width
 
-      ctx.font = `${size} "${fontName}", ${base}`
-      const testWidth = ctx.measureText(testStr).width
+      span.style.fontFamily = `"${fontName}", ${base}`
+      const testWidth = span.getBoundingClientRect().width
 
-      if (Math.abs(baseWidth - testWidth) > 0.1) return true
+      if (Math.abs(baseWidth - testWidth) > 0.5) {
+        detected = true
+        break
+      }
     }
 
-    return false
-  } catch {
-    return false
-  }
+    document.body.removeChild(span)
+    return detected
+  } catch { /* SSR 등 DOM 없는 환경 */ }
+
+  return false
 }
 
 export interface FontAvailability {
