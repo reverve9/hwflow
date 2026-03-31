@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS, NUMBERING_OPTIONS } from '@/store/types'
-import { checkFontAvailability, type FontAvailability } from '@/lib/fonts'
+import { useFontList } from '@/lib/fonts'
 
 interface EditableStyle {
   id: string
@@ -392,22 +392,30 @@ function MappingPanel({ styles }: { styles: EditableStyle[] }) {
 }
 
 function FontSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const fonts = useMemo(() => checkFontAvailability(), [])
-  const currentMissing = !fonts.find(f => f.name === value)?.available && value !== ''
+  const { getPresetData } = useAppStore()
+  const allFonts = useFontList()
+
+  // 프리셋에서 사용 중인 폰트 수집
+  const presetFontNames = new Set<string>()
+  const ps = (getPresetData() as any)?.paragraph_styles ?? {}
+  for (const sty of Object.values(ps) as any[]) {
+    if (sty?.font) presetFontNames.add(sty.font)
+  }
+
+  const presetFonts = allFonts.filter(f => presetFontNames.has(f.name))
+  const otherFonts = allFonts.filter(f => !presetFontNames.has(f.name))
 
   return (
-    <div>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        className={`w-full border rounded px-2 py-1 text-sm ${currentMissing ? 'border-orange-300 bg-orange-50' : ''}`}>
-        {fonts.map(f => (
-          <option key={f.name} value={f.name} disabled={!f.available}>
-            {f.name}{!f.available ? ' (미설치)' : ''}
-          </option>
-        ))}
-      </select>
-      {currentMissing && (
-        <p className="text-[10px] text-orange-500 mt-0.5">이 시스템에 설치되지 않은 폰트입니다</p>
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full border rounded px-2 py-1 text-sm">
+      {presetFonts.length > 0 && (
+        <optgroup label="프리셋 폰트">
+          {presetFonts.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+        </optgroup>
       )}
-    </div>
+      <optgroup label="시스템 폰트">
+        {otherFonts.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+      </optgroup>
+    </select>
   )
 }
