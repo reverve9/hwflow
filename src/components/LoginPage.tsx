@@ -36,7 +36,7 @@ export function LoginPage({ onLogin }: Props) {
         {/* 로고 */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-navy-800 tracking-tight">HWFlow</h1>
-          <p className="text-[13px] text-gray-400 mt-1">문서 변환 도구</p>
+          <p className="text-[13px] text-gray-400 mt-1">안수정박사 잡무 덜어주기 프로젝트 II</p>
         </div>
 
         {/* 로그인 카드 */}
