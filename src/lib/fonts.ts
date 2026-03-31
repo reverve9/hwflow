@@ -1,30 +1,32 @@
 /**
  * fonts.ts — 폰트 목록 및 시스템 폰트 감지
+ *
+ * 유료/저작권 폰트 제외, 시스템 기본 또는 무료 배포 폰트만 포함
  */
 
 export interface FontEntry {
   name: string
-  category: 'serif' | 'sans-serif' | 'display'
+  category: 'serif' | 'sans-serif'
 }
 
-/** 지원 폰트 목록 (프리셋/스타일에서 선택 가능) */
+/** 지원 폰트 목록 (무료/시스템 폰트만) */
 export const SUPPORTED_FONTS: FontEntry[] = [
   { name: '함초롬바탕', category: 'serif' },
   { name: '함초롬돋움', category: 'sans-serif' },
-  { name: '한컴바탕', category: 'serif' },
-  { name: '한컴 윤고딕 230', category: 'sans-serif' },
   { name: '맑은 고딕', category: 'sans-serif' },
   { name: '굴림체', category: 'sans-serif' },
   { name: '바탕체', category: 'serif' },
-  { name: '신명조', category: 'serif' },
-  { name: '휴먼명조', category: 'serif' },
   { name: '문체부 바탕체', category: 'serif' },
-  { name: 'HY헤드라인M', category: 'display' },
-  { name: 'HY견고딕', category: 'sans-serif' },
-  { name: '중고딕', category: 'sans-serif' },
 ]
 
-/** Canvas 기반 시스템 폰트 감지 */
+/**
+ * Canvas 기반 시스템 폰트 감지 (3-baseline 비교)
+ *
+ * 단일 fallback과 비교하면 한글 텍스트의 fallback 치환이
+ * 동일한 폰트로 되어 false-negative가 발생한다.
+ * serif, sans-serif, monospace 3개 baseline과 비교하여
+ * 하나라도 width가 다르면 해당 폰트가 설치된 것으로 판정.
+ */
 function detectFont(fontName: string): boolean {
   try {
     const canvas = document.createElement('canvas')
@@ -33,14 +35,19 @@ function detectFont(fontName: string): boolean {
 
     const testStr = '아버지가방에들어가신다ABCabc123'
     const size = '72px'
+    const baselines = ['serif', 'sans-serif', 'monospace'] as const
 
-    ctx.font = `${size} monospace`
-    const baseWidth = ctx.measureText(testStr).width
+    for (const base of baselines) {
+      ctx.font = `${size} ${base}`
+      const baseWidth = ctx.measureText(testStr).width
 
-    ctx.font = `${size} "${fontName}", monospace`
-    const testWidth = ctx.measureText(testStr).width
+      ctx.font = `${size} "${fontName}", ${base}`
+      const testWidth = ctx.measureText(testStr).width
 
-    return baseWidth !== testWidth
+      if (Math.abs(baseWidth - testWidth) > 0.1) return true
+    }
+
+    return false
   } catch {
     return false
   }
@@ -74,7 +81,6 @@ export function isFontAvailable(fontName: string): boolean {
   const list = checkFontAvailability()
   const entry = list.find(f => f.name === fontName)
   if (entry) return entry.available
-  // 목록에 없는 폰트도 감지 시도
   return detectFont(fontName)
 }
 
