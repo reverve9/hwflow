@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "name": "공문서_표준",
+    "version": "1.0",
+    "description": "행정기관 공문서 표준 스타일"
+  },
+  "page": {
+    "size": "A4",
+    "width_mm": 210,
+    "height_mm": 297,
+    "margin": {
+      "top_mm": 20,
+      "bottom_mm": 15,
+      "left_mm": 15,
+      "right_mm": 15
+    },
+    "header_height_mm": 15,
+    "footer_height_mm": 15
+  },
+  "colors": {
+    "primary": "#000000",
+    "secondary": "#444444",
+    "accent": "#003087",
+    "table_head": "#D8D8D8"
+  },
+  "paragraph_styles": {
+    "heading1": {
+      "numbering": "I, II, III",
+      "font": "함초롬바탕",
+      "size_pt": 15,
+      "bold": true,
+      "align": "left",
+      "indent_left_hwpunit": 1000,
+      "space_before_hwpunit": 600,
+      "space_after_hwpunit": 300,
+      "line_height_percent": 160
+    },
+    "heading2": {
+      "numbering": "1, 2, 3",
+      "font": "함초롬바탕",
+      "size_pt": 13,
+      "bold": true,
+      "align": "left",
+      "indent_left_hwpunit": 1500,
+      "space_before_hwpunit": 400,
+      "space_after_hwpunit": 200,
+      "line_height_percent": 160
+    },
+    "heading3": {
+      "numbering": "가, 나, 다",
+      "font": "함초롬바탕",
+      "size_pt": 12,
+      "bold": true,
+      "align": "left",
+      "indent_left_hwpunit": 2000,
+      "space_before_hwpunit": 200,
+      "space_after_hwpunit": 100,
+      "line_height_percent": 160
+    },
+    "heading4": {
+      "numbering": "1), 2), 3)",
+      "font": "함초롬바탕",
+      "size_pt": 11,
+      "bold": false,
+      "align": "left",
+      "indent_left_hwpunit": 3000,
+      "space_before_hwpunit": 100,
+      "space_after_hwpunit": 50,
+      "line_height_percent": 160
+    },
+    "body": {
+      "font": "함초롬바탕",
+      "size_pt": 10,
+      "bold": false,
+      "align": "justify",
+      "indent_left_hwpunit": 1500,
+      "space_before_hwpunit": 0,
+      "space_after_hwpunit": 0,
+      "line_height_percent": 160
+    },
+    "table_header": {
+      "font": "함초롬돋움",
+      "size_pt": 10,
+      "bold": true,
+      "align": "center",
+      "line_height_percent": 150
+    },
+    "table_body": {
+      "font": "함초롬바탕",
+      "size_pt": 10,
+      "bold": false,
+      "align": "left",
+      "line_height_percent": 150
+    }
+  },
+  "character_styles": {
+    "emphasis": { "bold": true },
+    "highlight": { "background": "#FFFF00" },
+    "hyperlink": { "color": "#0000FF", "underline": true }
+  },
+  "table_style": {
+    "border_type": "SOLID",
+    "border_width": "0.12 mm",
+    "border_color": "#000000",
+    "header_fill": "#D8D8D8",
+    "cell_margin_left": 510,
+    "cell_margin_right": 510,
+    "cell_margin_top": 141,
+    "cell_margin_bottom": 141
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "character_styles" : {
+    "emphasis" : {
+      "bold" : true
+    },
+    "highlight" : {
+      "background" : "#FFFF00"
+    },
+    "hyperlink" : {
+      "color" : "#0000FF",
+      "underline" : true
+    }
+  },
+  "colors" : {
+    "accent" : "#003087",
+    "primary" : "#000000",
+    "secondary" : "#444444",
+    "table_head" : "#D8D8D8"
+  },
+  "meta" : {
+    "description" : "스타일 프리셋",
+    "name" : "입찰공고문_강원도경제진흥원",
+    "version" : "1.0"
+  },
+  "page" : {
+    "footer_height_mm" : 15,
+    "header_height_mm" : 15,
+    "height_mm" : 297,
+    "margin" : {
+      "bottom_mm" : 10,
+      "left_mm" : 15,
+      "right_mm" : 15,
+      "top_mm" : 10
+    },
+    "size" : "A4",
+    "width_mm" : 210
+  },
+  "paragraph_styles" : {
+    "body" : {
+      "align" : "justify",
+      "bold" : false,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 1500,
+      "line_height_percent" : 160,
+      "size_pt" : 10,
+      "space_after_hwpunit" : 0,
+      "space_before_hwpunit" : 0
+    },
+    "heading1" : {
+      "align" : "left",
+      "bold" : true,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 1000,
+      "line_height_percent" : 160,
+      "size_pt" : 15,
+      "space_after_hwpunit" : 300,
+      "space_before_hwpunit" : 600
+    },
+    "heading2" : {
+      "align" : "left",
+      "bold" : true,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 1500,
+      "line_height_percent" : 160,
+      "size_pt" : 13,
+      "space_after_hwpunit" : 200,
+      "space_before_hwpunit" : 400
+    },
+    "heading3" : {
+      "align" : "left",
+      "bold" : true,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 2000,
+      "line_height_percent" : 160,
+      "size_pt" : 12,
+      "space_after_hwpunit" : 100,
+      "space_before_hwpunit" : 200
+    },
+    "heading4" : {
+      "align" : "left",
+      "bold" : false,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 3000,
+      "line_height_percent" : 160,
+      "size_pt" : 11,
+      "space_after_hwpunit" : 50,
+      "space_before_hwpunit" : 100
+    },
+    "table_body" : {
+      "align" : "left",
+      "bold" : false,
+      "font" : "함초롬바탕",
+      "indent_left_hwpunit" : 0,
+      "line_height_percent" : 150,
+      "size_pt" : 10,
+      "space_after_hwpunit" : 0,
+      "space_before_hwpunit" : 0
+    },
+    "table_header" : {
+      "align" : "center",
+      "bold" : true,
+      "font" : "함초롬돋움",
+      "indent_left_hwpunit" : 0,
+      "line_height_percent" : 150,
+      "size_pt" : 10,
+      "space_after_hwpunit" : 0,
+      "space_before_hwpunit" : 0
+    }
+  },
+  "style_mapping" : {
+
+  },
+  "table_style" : {
+    "border_color" : "#000000",
+    "border_type" : "SOLID",
+    "border_width" : "0.12 mm",
+    "cell_margin_bottom" : 141,
+    "cell_margin_left" : 510,
+    "cell_margin_right" : 510,
+    "cell_margin_top" : 141,
+    "header_fill" : "#D8D8D8"
+  }
+}
