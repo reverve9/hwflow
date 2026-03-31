@@ -82,7 +82,8 @@ export function FileInput() {
             d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
         <p className="text-base text-navy-400 mb-1">파일을 드래그하거나 클릭하여 선택</p>
-        <p className="text-sm text-app-muted mb-4">.docx, .md, .txt, .pdf</p>
+        <p className="text-sm text-app-muted">.docx, .md, .txt, .pdf</p>
+        <p className="text-[10px] text-app-muted mb-4">PDF는 Chrome/Edge 브라우저에서만 지원됩니다</p>
         <button
           onClick={() => fileRef.current?.click()}
           className="px-4 py-2 rounded-lg border border-app-border bg-app-surface text-[13px] text-navy-600 hover:bg-navy-50 transition-colors"
