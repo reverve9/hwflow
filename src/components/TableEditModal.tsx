@@ -352,7 +352,7 @@ export function TableEditModal({ block }: Props) {
   // ─── 렌더링 ────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
-      <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(90vw, 1050px)', height: 'min(85vh, 780px)' }} onClick={e => e.stopPropagation()}>
+      <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(85vw, 880px)', height: 'min(85vh, 720px)' }} onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-app-border shrink-0">
           <div className="min-w-0">
