@@ -104,15 +104,16 @@ export function DocumentPreview() {
         }}
       >
         {text !== null ? (
-          <span>{text}</span>
+          <span>{text || '\u00A0'}</span>
         ) : block.runs.length > 0 ? (
+          block.runs.every(r => !r.text) ? <span>{'\u00A0'}</span> :
           block.runs.map((run, i) => (
             <span key={i} style={{ fontWeight: (run.bold || style.bold) ? 'bold' : 'normal' }}>
               {run.text}
             </span>
           ))
         ) : (
-          <span>{block.text}</span>
+          <span>{block.text || '\u00A0'}</span>
         )}
       </div>
     )
