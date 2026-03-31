@@ -176,6 +176,9 @@ interface AppState {
   saveSnapshot: () => void
   undo: () => void
   redo: () => void
+
+  // 임시저장 복원
+  restoreDraft: (draft: unknown) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => {
@@ -439,6 +442,26 @@ export const useAppStore = create<AppState>((set, get) => {
       if (!next) return
       takeSnapshot(current)
       set(next)
+    },
+
+    restoreDraft: (draft: unknown) => {
+      const d = draft as Record<string, unknown>
+      if (!d || !Array.isArray(d.irBlocks)) return
+      const blocks = (d.irBlocks as Record<string, unknown>[]).map(b => irBlockFromDict(b))
+      set({
+        irBlocks: blocks,
+        documentTitle: (d.documentTitle as string) ?? '',
+        selectedPreset: (d.selectedPreset as string) ?? get().selectedPreset,
+        selectedFileName: (d.selectedFileName as string) ?? '',
+        blockOverrides: (d.blockOverrides as Record<string, BlockStyleOverride>) ?? {},
+        blockTypeOverrides: (d.blockTypeOverrides as Record<string, string>) ?? {},
+        blockTextOverrides: (d.blockTextOverrides as Record<string, string>) ?? {},
+        tableRowOverrides: (d.tableRowOverrides as Record<string, IRTableCell[][]>) ?? {},
+        tableHeaderOverrides: (d.tableHeaderOverrides as Record<string, boolean>) ?? {},
+        styleMapping: (d.styleMapping as Record<string, string>) ?? {},
+        selectedBlockIDs: new Set(),
+        anchorBlockID: null,
+      })
     },
   }
 })
