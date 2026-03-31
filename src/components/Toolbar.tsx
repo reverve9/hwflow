@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store/useAppStore'
 import type { InputMode } from '@/store/types'
 
-export function Toolbar({ onOpenPreviewWindow, onOpenSettings }: { onOpenPreviewWindow: () => void; onOpenSettings: () => void }) {
+export function Toolbar({ onOpenPreviewWindow, onOpenSettings, onLogout }: { onOpenPreviewWindow: () => void; onOpenSettings: () => void; onLogout?: () => void }) {
   const {
     inputMode, setInputMode, selectedPreset, setSelectedPreset,
     availablePresets, documentTitle, setDocumentTitle,
@@ -156,6 +156,21 @@ export function Toolbar({ onOpenPreviewWindow, onOpenSettings }: { onOpenPreview
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       </button>
+
+      {onLogout && (
+        <>
+          <div className="w-px h-5 bg-app-border" />
+          <button
+            onClick={onLogout}
+            className="p-1.5 rounded-md text-app-muted hover:bg-red-50 hover:text-red-500 transition-colors"
+            title="로그아웃"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+          </button>
+        </>
+      )}
     </div>
   )
 }

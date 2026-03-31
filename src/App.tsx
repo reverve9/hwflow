@@ -11,10 +11,17 @@ import { TableEditModal } from '@/components/TableEditModal'
 import { StyleManager } from '@/components/StyleManager'
 import { PreviewWindow } from '@/components/PreviewWindow'
 import { SettingsModal } from '@/components/SettingsModal'
+import { LoginPage } from '@/components/LoginPage'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { loadSettings, saveDraft, loadDraft, hasDraft, formatDraftTime } from '@/lib/autosave'
+import { getSession, logout } from '@/lib/auth'
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => !!getSession())
+
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />
+  }
   const {
     inputMode, irBlocks, showInspector, showSplitPreview,
     showBlockModal, showStyleSettings,
@@ -71,7 +78,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-app-bg">
-      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)} />
+      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)}
+        onLogout={() => { logout(); setAuthed(false) }} />
 
       {/* 임시저장 복원 배너 */}
       {draftBanner && (
