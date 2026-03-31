@@ -63,7 +63,7 @@ export async function parsePdf(arrayBuffer: ArrayBuffer) {
     const ops = await page.getOperatorList()
     const OPS = pdfjsLib.OPS
     for (let j = 0; j < ops.fnArray.length; j++) {
-      if (ops.fnArray[j] === OPS.paintImageXObject || ops.fnArray[j] === OPS.paintJpegXObject) {
+      if (ops.fnArray[j] === OPS.paintImageXObject || ops.fnArray[j] === (OPS as any).paintJpegXObject) {
         let imgY = 0
         for (let k = j - 1; k >= Math.max(0, j - 5); k--) {
           if (ops.fnArray[k] === OPS.transform) {
