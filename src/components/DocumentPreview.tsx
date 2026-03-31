@@ -220,33 +220,33 @@ export function DocumentPreview() {
   )
 }
 
-/** 한글 스타일 여백 꺾음 표시 (4 모서리) */
+/** 한글 스타일 여백 꺾음 표시 (4 모서리, 바깥쪽으로 꺾임) */
 function MarginCorners({ top, bottom, left, right }: { top: number; bottom: number; left: number; right: number }) {
-  const L = 8 // 꺾음선 길이
+  const L = 16
   const color = '#c0c0c0'
-  const style = { position: 'absolute' as const, pointerEvents: 'none' as const }
+  const abs = { position: 'absolute' as const, pointerEvents: 'none' as const }
 
   return (
     <>
-      {/* 좌상 */}
-      <div style={{ ...style, top, left }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: L, height: 1, backgroundColor: color }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: L, backgroundColor: color }} />
+      {/* 좌상: ┘ 모양 (왼쪽+위쪽으로 꺾임) */}
+      <div style={{ ...abs, top, left }}>
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
       </div>
-      {/* 우상 */}
-      <div style={{ ...style, top, right }}>
-        <div style={{ position: 'absolute', top: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
-      </div>
-      {/* 좌하 */}
-      <div style={{ ...style, bottom, left }}>
+      {/* 우상: └ 모양 (오른쪽+위쪽으로 꺾임) */}
+      <div style={{ ...abs, top, right }}>
         <div style={{ position: 'absolute', bottom: 0, left: 0, width: L, height: 1, backgroundColor: color }} />
         <div style={{ position: 'absolute', bottom: 0, left: 0, width: 1, height: L, backgroundColor: color }} />
       </div>
-      {/* 우하 */}
-      <div style={{ ...style, bottom, right }}>
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
+      {/* 좌하: ┐ 모양 (왼쪽+아래쪽으로 꺾임) */}
+      <div style={{ ...abs, bottom, left }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 1, height: L, backgroundColor: color }} />
+      </div>
+      {/* 우하: ┌ 모양 (오른쪽+아래쪽으로 꺾임) */}
+      <div style={{ ...abs, bottom, right }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: L, height: 1, backgroundColor: color }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: L, backgroundColor: color }} />
       </div>
     </>
   )
