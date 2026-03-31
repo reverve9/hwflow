@@ -165,36 +165,42 @@ export function TableEditModal({ block }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={close}>
-      <div className="bg-white rounded-lg shadow-xl flex flex-col" style={{ width: 'min(90vw, 1050px)', height: 'min(85vh, 780px)' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={close}>
+      <div className="bg-[#f5f5f5] rounded-xl shadow-2xl flex flex-col" style={{ width: 'min(90vw, 1050px)', height: 'min(85vh, 780px)' }} onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
-        <div className="flex items-center gap-3 p-4 border-b shrink-0">
-          <h3 className="font-bold text-lg">표 편집</h3>
-          <span className="text-sm text-gray-400">{rowCount} × {colCount}</span>
-          {selectedCells.size === 1 && primaryCell && (
-            <span className="text-xs bg-navy-100 text-navy-600 px-2 py-0.5 rounded">셀 [{primaryCell.row + 1}, {primaryCell.col + 1}]</span>
-          )}
-          {selectedCells.size > 1 && (
-            <span className="text-xs bg-navy-100 text-navy-600 px-2 py-0.5 rounded">{selectedCells.size}개 셀 선택</span>
-          )}
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-app-border shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-semibold text-navy-800">표 편집</h3>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[11px] text-app-muted">{rowCount} × {colCount}</span>
+              {selectedCells.size === 1 && primaryCell && (
+                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">셀 [{primaryCell.row + 1}, {primaryCell.col + 1}]</span>
+              )}
+              {selectedCells.size > 1 && (
+                <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded-md">{selectedCells.size}개 셀 선택</span>
+              )}
+            </div>
+          </div>
           <div className="flex-1" />
-          <button onClick={apply} className="px-3 py-1.5 bg-navy-600 text-white text-sm rounded hover:bg-navy-700">적용</button>
-          <button onClick={close} className="px-3 py-1.5 border border-gray-300 text-sm rounded hover:bg-gray-50">취소</button>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={close} className="px-3 py-1 text-[12px] rounded-md border border-app-border text-navy-600 hover:bg-white transition-colors">취소</button>
+            <button onClick={apply} className="px-3 py-1 text-[12px] rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors shadow-sm">적용</button>
+          </div>
         </div>
 
         {/* 툴바 */}
-        <div className="flex items-center gap-3 px-4 py-2 border-b text-sm shrink-0">
-          <label className="flex items-center gap-1.5 cursor-pointer">
+        <div className="flex items-center gap-3 px-5 py-2 border-b border-app-border/50 shrink-0">
+          <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-navy-700">
             <input type="checkbox" checked={hasHeader} onChange={e => setHasHeader(e.target.checked)} className="accent-navy-500" />
             첫 행 헤더
           </label>
-          <div className="w-px h-4 bg-gray-300" />
-          <button onClick={addRow} className="px-2 py-1 border rounded text-xs hover:bg-gray-50">+ 행</button>
-          <button onClick={addCol} className="px-2 py-1 border rounded text-xs hover:bg-gray-50">+ 열</button>
+          <div className="w-px h-4 bg-app-border" />
+          <button onClick={addRow} className="px-2 py-1 border border-app-border rounded-md text-[11px] text-navy-600 hover:bg-white transition-colors">+ 행</button>
+          <button onClick={addCol} className="px-2 py-1 border border-app-border rounded-md text-[11px] text-navy-600 hover:bg-white transition-colors">+ 열</button>
           <div className="flex-1" />
           {selectedCells.size > 0 && (
             <button onClick={() => { setSelectedCells(new Set()); setAnchorCell(null); setEditingCell(null) }}
-              className="text-xs text-gray-500 hover:underline">선택 해제</button>
+              className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">선택 해제</button>
           )}
         </div>
 
@@ -202,74 +208,75 @@ export function TableEditModal({ block }: Props) {
         <div className="flex flex-1 min-h-0">
           {/* 표 그리드 */}
           <div className="flex-1 overflow-auto p-4" onClick={() => { setSelectedCells(new Set()); setEditingCell(null) }}>
-            <table className="border-collapse" onClick={e => e.stopPropagation()}>
-              <tbody>
-                {Array.from({ length: rowCount }, (_, r) => (
-                  <tr key={r}>
-                    <td className="text-[10px] text-gray-400 pr-2 align-middle select-none">{r + 1}</td>
-                    {Array.from({ length: colCount }, (_, c) => {
-                      const isHeader = hasHeader && r === 0
-                      const isEditing = editingCell?.row === r && editingCell?.col === c
-                      const isSelected = selectedCells.has(cellKey({ row: r, col: c }))
-                      const bold = cellBolds[r][c] || isHeader
-                      const bg = cellBgColors[r][c] ?? (isHeader ? '#e5e7eb' : '#ffffff')
-                      const borders = cellBorders[r][c]
+            <div className="bg-white rounded-lg border border-app-border p-3 inline-block">
+              <table className="border-collapse" onClick={e => e.stopPropagation()}>
+                <tbody>
+                  {Array.from({ length: rowCount }, (_, r) => (
+                    <tr key={r}>
+                      <td className="text-[10px] text-app-muted pr-2 align-middle select-none">{r + 1}</td>
+                      {Array.from({ length: colCount }, (_, c) => {
+                        const isHeader = hasHeader && r === 0
+                        const isEditing = editingCell?.row === r && editingCell?.col === c
+                        const isSelected = selectedCells.has(cellKey({ row: r, col: c }))
+                        const bold = cellBolds[r][c] || isHeader
+                        const bg = cellBgColors[r][c] ?? (isHeader ? '#e5e7eb' : '#ffffff')
+                        const borders = cellBorders[r][c]
 
-                      return (
-                        <td
-                          key={c}
-                          className={`relative min-w-[80px] p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
-                          style={{ backgroundColor: bg }}
-                          onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
-                          onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
-                        >
-                          {/* 테두리 */}
-                          {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.top) }} />}
-                          {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.bottom) }} />}
-                          {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
-                          {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.right) }} />}
+                        return (
+                          <td
+                            key={c}
+                            className={`relative min-w-[80px] p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
+                            style={{ backgroundColor: bg }}
+                            onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
+                            onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
+                          >
+                            {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.top) }} />}
+                            {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.bottom) }} />}
+                            {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
+                            {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.right) }} />}
 
-                          {isEditing ? (
-                            <input
-                              autoFocus
-                              value={cellTexts[r][c]}
-                              onChange={e => setCellTexts(p => { const n = p.map(r => [...r]); n[r][c] = e.target.value; return n })}
-                              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingCell(null) }}
-                              className={`w-full px-1.5 py-1 text-[11px] outline-none bg-transparent ${bold ? 'font-bold' : ''}`}
-                              style={{ textAlign: cellAligns[r][c] }}
-                            />
-                          ) : (
-                            <div className={`px-1.5 py-1 text-[11px] min-h-[28px] ${bold ? 'font-bold' : ''}`}
-                              style={{ textAlign: cellAligns[r][c] }}>
-                              {cellTexts[r][c] || '\u00A0'}
-                            </div>
-                          )}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            {isEditing ? (
+                              <input
+                                autoFocus
+                                value={cellTexts[r][c]}
+                                onChange={e => setCellTexts(p => { const n = p.map(r => [...r]); n[r][c] = e.target.value; return n })}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingCell(null) }}
+                                className={`w-full px-1.5 py-1 text-[11px] outline-none bg-transparent ${bold ? 'font-bold' : ''}`}
+                                style={{ textAlign: cellAligns[r][c] }}
+                              />
+                            ) : (
+                              <div className={`px-1.5 py-1 text-[11px] min-h-[28px] ${bold ? 'font-bold' : ''}`}
+                                style={{ textAlign: cellAligns[r][c] }}>
+                                {cellTexts[r][c] || '\u00A0'}
+                              </div>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* 인스펙터 패널 */}
-          <div className="w-[220px] shrink-0 overflow-y-auto border-l bg-gray-50 p-3 space-y-4 text-sm">
+          <div className="w-[220px] shrink-0 overflow-y-auto border-l border-app-border p-3 space-y-3">
             {/* 선 설정 */}
             <div>
-              <h4 className="font-semibold mb-2">선</h4>
+              <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">선</div>
               <div className="flex gap-2">
-                <div>
-                  <label className="text-xs text-gray-400">종류</label>
+                <div className="flex-1">
+                  <div className="text-[10px] text-app-muted mb-1">종류</div>
                   <select value={lineType} onChange={e => setLineType(e.target.value as CellBorder['type'])}
-                    className="w-full border rounded px-1.5 py-1 text-xs">
+                    className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none">
                     <option value="SOLID">실선</option><option value="DASHED">점선</option><option value="NONE">없음</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-400">굵기</label>
+                <div className="flex-1">
+                  <div className="text-[10px] text-app-muted mb-1">굵기</div>
                   <select value={lineWidth} onChange={e => setLineWidth(e.target.value)}
-                    className="w-full border rounded px-1.5 py-1 text-xs">
+                    className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none">
                     <option value="0.12 mm">0.12</option><option value="0.25 mm">0.25</option>
                     <option value="0.4 mm">0.4</option><option value="0.7 mm">0.7</option>
                   </select>
@@ -277,29 +284,29 @@ export function TableEditModal({ block }: Props) {
               </div>
             </div>
 
-            <hr />
+            <hr className="border-app-border/50" />
 
             {/* 테두리 프리셋 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">테두리</h4>
-                <span className="text-[10px] text-gray-400">{selectedCells.size > 0 ? '선택 영역' : '표 전체'}</span>
+                <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider">테두리</div>
+                <span className="text-[10px] text-app-muted">{selectedCells.size > 0 ? '선택 영역' : '표 전체'}</span>
               </div>
               <div className="grid grid-cols-4 gap-1">
                 {PRESETS.map(p => (
                   <button key={p.key} onClick={() => applyPreset(p.key)}
-                    className="py-1.5 px-1 bg-white border rounded text-[9px] hover:bg-gray-100 leading-tight">
+                    className="py-1.5 px-1 bg-white border border-app-border rounded-md text-[9px] text-navy-600 hover:bg-navy-50 transition-colors leading-tight">
                     {p.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            <hr />
+            <hr className="border-app-border/50" />
 
             {/* 배경 */}
             <div>
-              <h4 className="font-semibold mb-2">배경</h4>
+              <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">배경</div>
               {primaryCell ? (
                 <div className="grid grid-cols-6 gap-1">
                   {BG_COLORS.map((c, i) => {
@@ -307,7 +314,7 @@ export function TableEditModal({ block }: Props) {
                     return (
                       <button key={i}
                         onClick={() => forEachSelected((r, cc) => setCellBgColors(p => { const n = p.map(r => [...r]); n[r][cc] = c; return n }))}
-                        className={`w-6 h-6 rounded border ${isSel ? 'ring-2 ring-navy-400' : 'border-gray-300'}`}
+                        className={`w-6 h-6 rounded-md border transition-shadow ${isSel ? 'ring-2 ring-navy-400' : 'border-app-border hover:shadow-sm'}`}
                         style={{ backgroundColor: c ?? '#fff' }}
                       >
                         {c === null && <span className="text-red-400 text-[10px]">∅</span>}
@@ -316,42 +323,44 @@ export function TableEditModal({ block }: Props) {
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">셀을 선택하면 배경색 변경 가능</p>
+                <p className="text-[11px] text-app-muted">셀을 선택하면 배경색 변경 가능</p>
               )}
             </div>
 
             {/* 셀 속성 */}
             {primaryCell && primaryCell.row < rowCount && primaryCell.col < colCount && (
               <>
-                <hr />
+                <hr className="border-app-border/50" />
                 <div>
-                  <h4 className="font-semibold mb-2">셀 속성{selectedCells.size > 1 ? ` (${selectedCells.size}개)` : ''}</h4>
-                  <label className="flex items-center gap-1.5 mb-2 cursor-pointer">
+                  <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">
+                    셀 속성{selectedCells.size > 1 ? ` (${selectedCells.size}개)` : ''}
+                  </div>
+                  <label className="flex items-center gap-1.5 mb-2.5 cursor-pointer">
                     <input type="checkbox" checked={cellBolds[primaryCell.row][primaryCell.col]}
                       onChange={e => forEachSelected((r, c) => setCellBolds(p => { const n = p.map(r => [...r]); n[r][c] = e.target.checked; return n }))}
                       className="accent-navy-500" />
-                    <span className="text-xs">볼드</span>
+                    <span className="text-[11px] text-navy-700">볼드</span>
                   </label>
-                  <div className="mb-2">
-                    <label className="text-xs text-gray-400">가로 정렬</label>
-                    <div className="flex gap-1 mt-1">
+                  <div className="mb-2.5">
+                    <div className="text-[10px] text-app-muted mb-1">가로 정렬</div>
+                    <div className="flex border border-app-border rounded-md overflow-hidden">
                       {(['left', 'center', 'right', 'justify'] as const).map(a => (
                         <button key={a}
                           onClick={() => forEachSelected((r, c) => setCellAligns(p => { const n = p.map(r => [...r]); n[r][c] = a; return n }))}
-                          className={`flex-1 py-1 text-[10px] rounded border ${cellAligns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-100 border-navy-300' : 'hover:bg-gray-100'}`}>
-                          {a === 'left' ? '좌' : a === 'center' ? '중' : a === 'right' ? '우' : '양'}
+                          className={`flex-1 py-1 text-[10px] transition-colors ${cellAligns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-600 text-white' : 'bg-white text-navy-600 hover:bg-navy-50'}`}>
+                          {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400">세로 정렬</label>
-                    <div className="flex gap-1 mt-1">
+                    <div className="text-[10px] text-app-muted mb-1">세로 정렬</div>
+                    <div className="flex border border-app-border rounded-md overflow-hidden">
                       {(['top', 'center', 'bottom'] as const).map(a => (
                         <button key={a}
                           onClick={() => forEachSelected((r, c) => setCellValigns(p => { const n = p.map(r => [...r]); n[r][c] = a; return n }))}
-                          className={`flex-1 py-1 text-[10px] rounded border ${cellValigns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-100 border-navy-300' : 'hover:bg-gray-100'}`}>
-                          {a === 'top' ? '상' : a === 'center' ? '중' : '하'}
+                          className={`flex-1 py-1 text-[10px] transition-colors ${cellValigns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-600 text-white' : 'bg-white text-navy-600 hover:bg-navy-50'}`}>
+                          {a === 'top' ? '↑' : a === 'center' ? '↕' : '↓'}
                         </button>
                       ))}
                     </div>
