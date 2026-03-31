@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { login } from '@/lib/auth'
+import { login, getRememberedEmail, setRememberedEmail } from '@/lib/auth'
 
 interface Props {
   onLogin: () => void
 }
 
 export function LoginPage({ onLogin }: Props) {
-  const [email, setEmail] = useState('')
+  const remembered = getRememberedEmail()
+  const [email, setEmail] = useState(remembered)
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(!!remembered)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,6 +21,7 @@ export function LoginPage({ onLogin }: Props) {
     setTimeout(() => {
       const result = login(email, password)
       if (result.ok) {
+        setRememberedEmail(remember ? email.trim().toLowerCase() : null)
         onLogin()
       } else {
         setError(result.error ?? '로그인 실패')
@@ -63,6 +66,12 @@ export function LoginPage({ onLogin }: Props) {
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 placeholder:text-gray-300 outline-none focus:border-navy-400 focus:ring-2 focus:ring-navy-100 transition-all"
               />
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+                className="accent-navy-500 rounded" />
+              <span className="text-[11px] text-gray-500">로그인 정보 기억</span>
+            </label>
 
             {error && (
               <p className="text-[11px] text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>

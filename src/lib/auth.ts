@@ -3,6 +3,7 @@
  */
 
 const SESSION_KEY = 'hwflow_session'
+const REMEMBER_KEY = 'hwflow_remember'
 
 // TODO: Supabase Auth 연동 시 제거
 const ACCOUNTS: Record<string, string> = {
@@ -30,6 +31,15 @@ export function login(email: string, password: string): { ok: boolean; error?: s
 
 export function logout() {
   localStorage.removeItem(SESSION_KEY)
+}
+
+export function setRememberedEmail(email: string | null) {
+  if (email) localStorage.setItem(REMEMBER_KEY, email)
+  else localStorage.removeItem(REMEMBER_KEY)
+}
+
+export function getRememberedEmail(): string {
+  return localStorage.getItem(REMEMBER_KEY) ?? ''
 }
 
 const SESSION_TTL_MS = 6 * 60 * 60 * 1000 // 6시간
