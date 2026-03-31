@@ -19,13 +19,58 @@ const BG_COLORS: (string | null)[] = [
   '#F3E5F5', '#FFF9C4', '#ECEFF1', '#F5F5F5', '#FFFFFF',
 ]
 
-const PRESETS: { key: BorderPreset; label: string }[] = [
-  { key: 'all', label: '전체' }, { key: 'outerThick', label: '윤곽굵게' },
-  { key: 'innerOnly', label: '안쪽' }, { key: 'none', label: '없음' },
-  { key: 'outerHorizontal', label: '윤곽+가로' }, { key: 'outerVertical', label: '윤곽+세로' },
-  { key: 'horizontalOnly', label: '가로만' }, { key: 'verticalOnly', label: '세로만' },
-  { key: 'topBottomH', label: '위아래+가로' }, { key: 'leftRightV', label: '좌우+세로' },
+const PRESETS: BorderPreset[] = [
+  'all', 'outerThick', 'innerOnly', 'none',
+  'outerHorizontal', 'outerVertical', 'horizontalOnly', 'verticalOnly',
+  'topBottomH', 'leftRightV',
 ]
+
+/** 테두리 프리셋 아이콘 SVG */
+function BorderIcon({ preset }: { preset: BorderPreset }) {
+  const s = 36 // svg size
+  const p = 4  // padding
+  const m = s / 2 // midpoint
+  const on = 'stroke-blue-500'
+  const off = 'stroke-gray-300'
+  const onW = '1.5'
+  const offW = '0.8'
+  const dash = '2,2'
+
+  // 어떤 선이 활성인지
+  const flags = getFlags(preset)
+  const t = flags.outerTop, b = flags.outerBottom, l = flags.outerLeft, r = flags.outerRight
+  const ih = flags.innerH, iv = flags.innerV
+  const thick = flags.outerThick
+
+  return (
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} className="block">
+      {/* top */}
+      <line x1={p} y1={p} x2={s-p} y2={p}
+        className={t ? on : off} strokeWidth={t && thick ? '2.5' : t ? onW : offW}
+        strokeDasharray={t ? undefined : dash} />
+      {/* bottom */}
+      <line x1={p} y1={s-p} x2={s-p} y2={s-p}
+        className={b ? on : off} strokeWidth={b && thick ? '2.5' : b ? onW : offW}
+        strokeDasharray={b ? undefined : dash} />
+      {/* left */}
+      <line x1={p} y1={p} x2={p} y2={s-p}
+        className={l ? on : off} strokeWidth={l && thick ? '2.5' : l ? onW : offW}
+        strokeDasharray={l ? undefined : dash} />
+      {/* right */}
+      <line x1={s-p} y1={p} x2={s-p} y2={s-p}
+        className={r ? on : off} strokeWidth={r && thick ? '2.5' : r ? onW : offW}
+        strokeDasharray={r ? undefined : dash} />
+      {/* inner horizontal */}
+      <line x1={p} y1={m} x2={s-p} y2={m}
+        className={ih ? on : off} strokeWidth={ih ? onW : offW}
+        strokeDasharray={ih ? undefined : dash} />
+      {/* inner vertical */}
+      <line x1={m} y1={p} x2={m} y2={s-p}
+        className={iv ? on : off} strokeWidth={iv ? onW : offW}
+        strokeDasharray={iv ? undefined : dash} />
+    </svg>
+  )
+}
 
 function getFlags(p: BorderPreset) {
   const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false, outerThick: false }
@@ -360,12 +405,12 @@ export function TableEditModal({ block }: Props) {
         <div className="flex flex-1 min-h-0">
           {/* 표 그리드 */}
           <div className="flex-1 overflow-auto p-4" onClick={() => { setSelectedCells(new Set()); setEditingCell(null) }}>
-            <div className="bg-white rounded-lg border border-app-border p-3 inline-block">
-              <table className="border-collapse" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-lg border border-app-border p-3">
+              <table className="border-collapse w-full table-fixed" onClick={e => e.stopPropagation()}>
                 <tbody>
                   {Array.from({ length: rowCount }, (_, r) => (
                     <tr key={r}>
-                      <td className="text-[10px] text-app-muted pr-2 align-middle select-none">{r + 1}</td>
+                      <td className="text-[10px] text-app-muted pr-2 align-middle select-none w-6">{r + 1}</td>
                       {Array.from({ length: colCount }, (_, c) => {
                         const merge = cellMerge[r][c]
                         if (merge.merged) return null
@@ -383,7 +428,7 @@ export function TableEditModal({ block }: Props) {
                             key={c}
                             colSpan={merge.colspan > 1 ? merge.colspan : undefined}
                             rowSpan={merge.rowspan > 1 ? merge.rowspan : undefined}
-                            className={`relative min-w-[80px] p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
+                            className={`relative p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
                             style={{ backgroundColor: bg }}
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
                             onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
@@ -457,11 +502,11 @@ export function TableEditModal({ block }: Props) {
                 <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider">테두리</div>
                 <span className="text-[10px] text-app-muted">{selectedCells.size > 0 ? '선택 영역' : '표 전체'}</span>
               </div>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-5 gap-1">
                 {PRESETS.map(p => (
-                  <button key={p.key} onClick={() => applyPreset(p.key)}
-                    className="py-1.5 px-1 bg-white border border-app-border rounded-md text-[9px] text-navy-600 hover:bg-navy-50 transition-colors leading-tight">
-                    {p.label}
+                  <button key={p} onClick={() => applyPreset(p)}
+                    className="flex items-center justify-center bg-white border border-app-border rounded-md hover:bg-navy-50 transition-colors p-0.5">
+                    <BorderIcon preset={p} />
                   </button>
                 ))}
               </div>
