@@ -43,6 +43,17 @@ export interface IRBlock {
   indent_left_hwpunit?: number
   space_before_hwpunit?: number
   space_after_hwpunit?: number
+  // 원본 문서 스타일 (DOCX 등에서 추출, 인스펙터용)
+  originalStyle?: {
+    font?: string
+    size_pt?: number
+    bold?: boolean
+    align?: string
+    line_height_percent?: number
+    indent_left_hwpunit?: number
+    space_before_hwpunit?: number
+    space_after_hwpunit?: number
+  }
 }
 
 export interface ParagraphStyleData {

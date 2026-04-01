@@ -144,6 +144,10 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
   let indentLeft = 0;
   let spaceBefore = 0;
   let spaceAfter = 0;
+  let lineHeight = 0;
+  let pprFont = null;
+  let pprSize = 0;
+  let pprBold = false;
   const runs = [];
   let hasImage = false;
 
@@ -168,7 +172,6 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
       const indNode = _findOrdered(pPrChildren, 'w:ind');
       if (indNode) {
         const attrs = indNode[':@'] || {};
-        // Word twips (1/20 pt) → HWP unit (1/100 pt): twips / 20 * 100 = twips * 5
         const left = parseInt(attrs['@_w:left'] || '0', 10);
         if (left) indentLeft = left * 5;
       }
@@ -180,6 +183,23 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
         const after = parseInt(attrs['@_w:after'] || '0', 10);
         if (before) spaceBefore = before * 5;
         if (after) spaceAfter = after * 5;
+        // 줄간격: w:line (1/240 pt 단위), w:lineRule
+        const line = parseInt(attrs['@_w:line'] || '0', 10);
+        if (line) {
+          const lineRule = attrs['@_w:lineRule'] || 'auto';
+          if (lineRule === 'auto') {
+            lineHeight = Math.round(line / 240 * 100);
+          }
+        }
+      }
+      // 단락 기본 런 속성 (w:rPr in pPr)
+      const rPrNode = _findOrdered(pPrChildren, 'w:rPr');
+      if (rPrNode) {
+        const rPrChildren = rPrNode['w:rPr'] || [];
+        const extracted = _extractRunStyle(rPrChildren);
+        if (extracted.font) pprFont = extracted.font;
+        if (extracted.size) pprSize = extracted.size;
+        if (extracted.bold) pprBold = true;
       }
     } else if (child['w:r'] !== undefined) {
       // 이미지 감지 (w:r 내 w:drawing 또는 w:pict)
@@ -200,11 +220,33 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
     return { type: 'image', runs: [{ text: '이미지', bold: false }] };
   }
 
+  // 원본 스타일 구성: 단락 rPr → 첫 번째 런에서 보완
+  const firstRun = runs[0];
+  const origFont = pprFont || (firstRun && firstRun._font) || null;
+  const origSize = pprSize || (firstRun && firstRun._size) || 0;
+  const origBold = pprBold || (firstRun && firstRun.bold) || false;
+
+  // 런에서 내부 필드 제거
+  for (const r of runs) { delete r._font; delete r._size; }
+
   const result = { type: irType, runs: runs.length > 0 ? runs : [{ text: '', bold: false }] };
   if (align) result.align = align;
   if (indentLeft) result.indent_left_hwpunit = indentLeft;
   if (spaceBefore) result.space_before_hwpunit = spaceBefore;
   if (spaceAfter) result.space_after_hwpunit = spaceAfter;
+
+  // 원본 스타일 (하나라도 있으면 추가)
+  const os = {};
+  if (origFont) os.font = origFont;
+  if (origSize) os.size_pt = origSize;
+  os.bold = origBold;
+  if (align) os.align = align;
+  if (lineHeight) os.line_height_percent = lineHeight;
+  if (indentLeft) os.indent_left_hwpunit = indentLeft;
+  if (spaceBefore) os.space_before_hwpunit = spaceBefore;
+  if (spaceAfter) os.space_after_hwpunit = spaceAfter;
+  if (Object.keys(os).length > 1) result.originalStyle = os;  // bold만 있으면 생략
+
   return result;
 }
 
@@ -214,21 +256,20 @@ function _parseRunOrdered(rNode) {
   let italic = false;
   let underline = false;
   let color = null;
+  let font = null;
+  let size = 0;
   let text = '';
 
   for (const child of rChildren) {
     if (child['w:rPr'] !== undefined) {
       const rPrChildren = child['w:rPr'] || [];
-      for (const prop of rPrChildren) {
-        if (prop['w:b'] !== undefined) bold = true;
-        if (prop['w:i'] !== undefined) italic = true;
-        if (prop['w:u'] !== undefined) underline = true;
-        if (prop['w:color'] !== undefined) {
-          const attrs = prop[':@'] || {};
-          const val = attrs['@_w:val'];
-          if (val && val !== 'auto') color = '#' + val;
-        }
-      }
+      const extracted = _extractRunStyle(rPrChildren);
+      bold = extracted.bold;
+      italic = extracted.italic;
+      underline = extracted.underline;
+      color = extracted.color;
+      font = extracted.font;
+      size = extracted.size;
     } else if (child['w:t'] !== undefined) {
       const tContent = child['w:t'];
       if (Array.isArray(tContent)) {
@@ -249,7 +290,34 @@ function _parseRunOrdered(rNode) {
   if (italic) run.italic = italic;
   if (underline) run.underline = underline;
   if (color) run.color = color;
+  if (font) run._font = font;
+  if (size) run._size = size;
   return run;
+}
+
+/** w:rPr 자식 노드에서 폰트/크기/굵기 등 추출 */
+function _extractRunStyle(rPrChildren) {
+  let bold = false, italic = false, underline = false, color = null, font = null, size = 0;
+  for (const prop of rPrChildren) {
+    if (prop['w:b'] !== undefined) bold = true;
+    if (prop['w:i'] !== undefined) italic = true;
+    if (prop['w:u'] !== undefined) underline = true;
+    if (prop['w:color'] !== undefined) {
+      const attrs = prop[':@'] || {};
+      const val = attrs['@_w:val'];
+      if (val && val !== 'auto') color = '#' + val;
+    }
+    if (prop['w:rFonts'] !== undefined) {
+      const attrs = prop[':@'] || {};
+      font = attrs['@_w:eastAsia'] || attrs['@_w:ascii'] || attrs['@_w:hAnsi'] || null;
+    }
+    if (prop['w:sz'] !== undefined) {
+      const attrs = prop[':@'] || {};
+      const val = parseInt(attrs['@_w:val'] || '0', 10);
+      if (val) size = val / 2; // half-points → pt
+    }
+  }
+  return { bold, italic, underline, color, font, size };
 }
 
 function _parseTableOrdered(tblNode, styleIdToName) {

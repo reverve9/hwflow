@@ -47,20 +47,42 @@ export function StyleInspector() {
             })()}
           </Section>
 
-          {/* 폰트 */}
+          {/* 폰트 & 단락 */}
           {(() => {
             const eType = effectiveType(block)
             const style = styleFor(eType)
+            const os = block.originalStyle
             return (
               <>
                 <Section title="폰트">
-                  <Row label="서체" value={style.font} />
-                  <Row label="크기" value={`${style.size_pt}pt`} />
+                  {os?.font ? (
+                    <>
+                      <Row label="원본" value={os.font} />
+                      <Row label="적용" value={style.font} highlight={os.font !== style.font} />
+                    </>
+                  ) : (
+                    <Row label="서체" value={style.font} />
+                  )}
+                  {os?.size_pt ? (
+                    <>
+                      <Row label="원본" value={`${os.size_pt}pt`} />
+                      <Row label="적용" value={`${style.size_pt}pt`} highlight={os.size_pt !== style.size_pt} />
+                    </>
+                  ) : (
+                    <Row label="크기" value={`${style.size_pt}pt`} />
+                  )}
                   <Row label="굵기" value={style.bold ? 'Bold' : 'Regular'} />
                 </Section>
                 <Section title="단락">
                   <Row label="정렬" value={ALIGN_LABELS[style.align] ?? style.align} />
-                  <Row label="줄간격" value={`${style.line_height_percent}%`} />
+                  {os?.line_height_percent ? (
+                    <>
+                      <Row label="원본" value={`${os.line_height_percent}%`} />
+                      <Row label="적용" value={`${style.line_height_percent}%`} highlight={os.line_height_percent !== style.line_height_percent} />
+                    </>
+                  ) : (
+                    <Row label="줄간격" value={`${style.line_height_percent}%`} />
+                  )}
                   <Row label="들여쓰기" value={hwpunitToMM(style.indent_left_hwpunit)} />
                   <Row label="단락 전" value={hwpunitToMM(style.space_before_hwpunit)} />
                   <Row label="단락 후" value={hwpunitToMM(style.space_after_hwpunit)} />
