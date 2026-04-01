@@ -34,8 +34,8 @@ function BorderIcon({ preset }: { preset: BorderPreset }) {
   const b = flags.outerBottom || flags.allBottom
   const l = flags.outerLeft || flags.allLeft
   const r = flags.outerRight || flags.allRight
-  const ih = flags.innerH || flags.allTop || flags.allBottom
-  const iv = flags.innerV || flags.allLeft || flags.allRight
+  const ih = flags.innerH
+  const iv = flags.innerV
 
   const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => (
     <line x1={x1} y1={y1} x2={x2} y2={y2}
