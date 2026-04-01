@@ -106,6 +106,7 @@ export function TableEditModal({ block }: Props) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())
   const [anchorCell, setAnchorCell] = useState<CellIndex | null>(null)
   const [editingCell, setEditingCell] = useState<CellIndex | null>(null)
+  const [activePreset, setActivePreset] = useState<BorderPreset | null>(null)
 
   const rowCount = cellTexts.length
   const colCount = cellTexts[0]?.length ?? 0
@@ -307,6 +308,7 @@ export function TableEditModal({ block }: Props) {
 
   // ─── 테두리 프리셋 ────────────────────────────────────
   const applyPreset = (preset: BorderPreset) => {
+    setActivePreset(preset)
     const f = getFlags(preset)
     const line: CellBorder = { type: lineType, width: lineWidth }
     const outer = line
@@ -395,7 +397,7 @@ export function TableEditModal({ block }: Props) {
           {/* 표 그리드 */}
           <div className="flex-1 overflow-auto p-4" onClick={() => { setSelectedCells(new Set()); setEditingCell(null) }}>
             <div className="bg-white rounded-lg border border-app-border p-3">
-              <table className="border-collapse w-full table-fixed" onClick={e => e.stopPropagation()}>
+              <table className="border-collapse w-full table-fixed select-none" onClick={e => e.stopPropagation()}>
                 <tbody>
                   {Array.from({ length: rowCount }, (_, r) => (
                     <tr key={r}>
@@ -422,10 +424,10 @@ export function TableEditModal({ block }: Props) {
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
                             onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
                           >
-                            {r === 0 && borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.top) }} />}
-                            {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.bottom) }} />}
-                            {c === 0 && borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
-                            {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.right) }} />}
+                            {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.top) }} />}
+                            {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.bottom) }} />}
+                            {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: bdrW(borders.left) }} />}
+                            {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black" style={{ width: bdrW(borders.right) }} />}
 
                             {/* 병합 표시 */}
                             {isMerged && (
@@ -499,7 +501,11 @@ export function TableEditModal({ block }: Props) {
                 {PRESETS.map(p => (
                   <button key={p} onClick={() => applyPreset(p)}
                     disabled={selectedCells.size === 0}
-                    className="flex items-center justify-center bg-white border border-app-border rounded-md hover:bg-navy-50 transition-colors p-0.5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
+                    className={`flex items-center justify-center border rounded-md transition-colors p-0.5 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                      activePreset === p && selectedCells.size > 0
+                        ? 'bg-navy-100 border-navy-400 shadow-inner'
+                        : 'bg-white border-app-border hover:bg-navy-50'
+                    }`}>
                     <BorderIcon preset={p} />
                   </button>
                 ))}
