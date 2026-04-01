@@ -237,6 +237,10 @@ function _parseSection(xml, header) {
   const blocks = [];
   const secChildren = sec['sec'] || [];
 
+  // 디버그: 섹션 자식 태그 목록
+  const tagNames = secChildren.map(c => Object.keys(c).filter(k => k !== ':@').join(','));
+  console.log('[HWPX] section children tags:', tagNames.join(' | '));
+
   for (const child of secChildren) {
     if (child['p'] !== undefined) {
       const block = _parseParagraph(child, header);
@@ -247,6 +251,7 @@ function _parseSection(xml, header) {
     }
   }
 
+  console.log('[HWPX] parsed blocks:', blocks.length, 'tables:', blocks.filter(b => b.type === 'table').length);
   return blocks;
 }
 
