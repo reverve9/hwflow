@@ -39,10 +39,10 @@ const PRESETS: BorderPreset[] = [
 function BorderIcon({ preset }: { preset: BorderPreset }) {
   const s = 36, p = 4, m = s / 2
   const flags = getFlags(preset)
-  const t = flags.outerTop || flags.allTop
-  const b = flags.outerBottom || flags.allBottom
-  const l = flags.outerLeft || flags.allLeft
-  const r = flags.outerRight || flags.allRight
+  const t = flags.outerTop
+  const b = flags.outerBottom
+  const l = flags.outerLeft
+  const r = flags.outerRight
   const ih = flags.innerH
   const iv = flags.innerV
 
@@ -77,16 +77,16 @@ function BorderIcon({ preset }: { preset: BorderPreset }) {
 }
 
 function getFlags(p: BorderPreset) {
-  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false, allTop: false, allBottom: false, allLeft: false, allRight: false }
+  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false }
   switch (p) {
     case 'all': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerH: true, innerV: true }
     case 'outer': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true }
     case 'innerOnly': return { ...f, innerH: true, innerV: true }
     case 'none': return f
-    case 'topOnly': return { ...f, allTop: true }
-    case 'bottomOnly': return { ...f, allBottom: true }
-    case 'leftOnly': return { ...f, allLeft: true }
-    case 'rightOnly': return { ...f, allRight: true }
+    case 'topOnly': return { ...f, outerTop: true }
+    case 'bottomOnly': return { ...f, outerBottom: true }
+    case 'leftOnly': return { ...f, outerLeft: true }
+    case 'rightOnly': return { ...f, outerRight: true }
     case 'innerH': return { ...f, innerH: true }
     case 'innerV': return { ...f, innerV: true }
   }
@@ -340,25 +340,10 @@ export function TableEditModal({ block }: Props) {
           const isLeft = c === cRange[0]
           const isRight = c === cRange[1]
 
-          // top
-          if (f.allTop) next[r][c].top = { ...on }
-          else if (isTop) next[r][c].top = f.outerTop ? { ...on } : { ...off }
-          else next[r][c].top = f.innerH ? { ...on } : { ...off }
-
-          // bottom
-          if (f.allBottom) next[r][c].bottom = { ...on }
-          else if (isBottom) next[r][c].bottom = f.outerBottom ? { ...on } : { ...off }
-          else next[r][c].bottom = f.innerH ? { ...on } : { ...off }
-
-          // left
-          if (f.allLeft) next[r][c].left = { ...on }
-          else if (isLeft) next[r][c].left = f.outerLeft ? { ...on } : { ...off }
-          else next[r][c].left = f.innerV ? { ...on } : { ...off }
-
-          // right
-          if (f.allRight) next[r][c].right = { ...on }
-          else if (isRight) next[r][c].right = f.outerRight ? { ...on } : { ...off }
-          else next[r][c].right = f.innerV ? { ...on } : { ...off }
+          next[r][c].top = (isTop && f.outerTop) ? { ...on } : (!isTop && f.innerH) ? { ...on } : { ...off }
+          next[r][c].bottom = (isBottom && f.outerBottom) ? { ...on } : (!isBottom && f.innerH) ? { ...on } : { ...off }
+          next[r][c].left = (isLeft && f.outerLeft) ? { ...on } : (!isLeft && f.innerV) ? { ...on } : { ...off }
+          next[r][c].right = (isRight && f.outerRight) ? { ...on } : (!isRight && f.innerV) ? { ...on } : { ...off }
         }
       }
       return next
