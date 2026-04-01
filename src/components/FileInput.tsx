@@ -27,6 +27,11 @@ export function FileInput() {
       return
     }
 
+    if (ext === 'hwp') {
+      setConversionMessage('.hwp(구 형식)는 지원하지 않습니다. 한/글에서 .hwpx로 다시 저장해주세요. (파일 → 다른 이름으로 저장 → HWPX)')
+      return
+    }
+
     if (!['md', 'txt', 'markdown', 'docx', 'pdf', 'hwpx'].includes(ext)) {
       setConversionMessage('지원하지 않는 파일 형식입니다. (.md, .txt, .docx, .pdf, .hwpx, .hwfl)')
       return
