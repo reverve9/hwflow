@@ -26,10 +26,11 @@ export default function App() {
   // Supabase 인증 상태
   useEffect(() => {
     // 초기 세션 체크
-    getProfile().then(p => {
+    getProfile().then(async p => {
       setProfile(p)
       setAuthed(!!p?.approved)
       setAuthLoading(false)
+      if (p?.approved) await useAppStore.getState().loadDBPresets()
     })
     // 이후 변경 구독
     const sub = onAuthChange(async (user) => {

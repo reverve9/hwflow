@@ -6,6 +6,8 @@ import type {
 import { STYLE_LABELS } from './types'
 import { takeSnapshot, undo as histUndo, redo as histRedo, pushToRedo, canUndo, canRedo } from './history'
 import type { EditSnapshot } from './history'
+import { loadPresetsFromDB, savePresetToDB, deletePresetFromDB } from '@/lib/presetDB'
+import type { DBPreset } from '@/lib/presetDB'
 
 const PRESET_PREFIX = 'hwflow_preset_'
 
@@ -190,6 +192,9 @@ interface AppState {
   setAvailableStyleKeys: (keys: string[]) => void
   setStyleDisplayNames: (names: Record<string, string>) => void
   reloadPresets: () => void
+  loadDBPresets: () => Promise<void>
+  savePresetToCloud: (name: string, data: StylePreset, tenantId?: string | null) => Promise<{ ok: boolean; error?: string }>
+  deletePresetFromCloud: (presetId: string) => Promise<{ ok: boolean; error?: string }>
 
   // Undo/Redo
   saveSnapshot: () => void
@@ -423,6 +428,28 @@ export const useAppStore = create<AppState>((set, get) => {
     reloadPresets: () => {
       const list = loadPresetList()
       set(s => ({ availablePresets: list.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
+    },
+
+    loadDBPresets: async () => {
+      const dbPresets = await loadPresetsFromDB()
+      for (const p of dbPresets) {
+        const key = `${PRESET_PREFIX}db_${p.id}`
+        // DB 프리셋을 localStorage에 캐시 (로컬 수정본이 없으면)
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, JSON.stringify({ ...p.data, meta: { ...p.data.meta, name: p.name, db_id: p.id } }))
+        }
+      }
+      // 프리셋 목록 새로고침
+      const list = loadPresetList()
+      set(s => ({ availablePresets: list.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
+    },
+
+    savePresetToCloud: async (name, data, tenantId) => {
+      return savePresetToDB(name, data, tenantId)
+    },
+
+    deletePresetFromCloud: async (presetId) => {
+      return deletePresetFromDB(presetId)
     },
 
     // Undo/Redo

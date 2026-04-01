@@ -193,6 +193,20 @@ export function StyleManager() {
     } catch {}
   }
 
+  const handleCloudSave = async () => {
+    const preset = getPresetData()
+    if (!preset) return
+    const name = preset.meta?.name ?? selectedPreset
+    const { savePresetToCloud } = useAppStore.getState()
+    const result = await savePresetToCloud(name, preset)
+    if (result.ok) {
+      setSaveMessage('클라우드 저장 완료')
+    } else {
+      setSaveMessage(`클라우드 저장 실패: ${result.error}`)
+    }
+    setTimeout(() => setSaveMessage(''), 3000)
+  }
+
   const handleExport = () => {
     const preset = getPresetData()
     if (!preset) return
@@ -259,6 +273,12 @@ export function StyleManager() {
             </svg>
           </button>
           <div className="flex-1" />
+          <button onClick={handleCloudSave} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="클라우드에 프리셋 저장">
+            <svg className="w-3.5 h-3.5 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3 3 0 013.438 3.42A3.75 3.75 0 0118 19.5H6.75z" />
+            </svg>
+            클라우드
+          </button>
           <button onClick={handleExport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">내보내기</button>
           <button onClick={handleImport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">가져오기</button>
         </div>
