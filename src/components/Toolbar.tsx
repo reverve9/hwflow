@@ -74,12 +74,13 @@ export function Toolbar({ onOpenPreviewWindow, onOpenSettings, isAdmin, onOpenAd
       <button
         onClick={saveProjectFile}
         disabled={!hasBlocks}
-        className="p-1.5 rounded-md text-app-muted hover:bg-navy-50 hover:text-navy-600 transition-colors disabled:opacity-30"
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-[12px] text-app-muted hover:bg-navy-50 hover:text-navy-600 transition-colors disabled:opacity-30 border border-app-border"
         title="프로젝트 저장 (.hwfl)"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
         </svg>
+        저장
       </button>
 
       <div className="flex-1" />

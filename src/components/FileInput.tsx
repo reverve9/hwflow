@@ -77,9 +77,17 @@ export function FileInput() {
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
-  }, [handleFile])
+    const files = e.dataTransfer.files
+    console.log('[HWFlow] drop:', files.length, 'files', files[0]?.name, files[0]?.type)
+    if (files.length === 0) {
+      // 일부 OS에서 특정 파일 타입이 드래그로 전달되지 않을 수 있음
+      const items = e.dataTransfer.items
+      console.log('[HWFlow] drop items:', items?.length)
+      setConversionMessage('파일을 드래그할 수 없습니다. "파일 선택" 버튼을 사용해주세요.')
+      return
+    }
+    handleFile(files[0])
+  }, [handleFile, setConversionMessage])
 
   const onFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

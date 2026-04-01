@@ -69,30 +69,15 @@ export function parseDocx(base64Data) {
   const decoder = _getDecoder();
   const docXmlStr = decoder(docXmlBytes);
 
-  // word/styles.xml에서 스타일 ID → 이름 매핑 구축
+  // word/styles.xml에서 스타일 ID → 이름/속성 매핑 구축
   const styleIdToName = {};
+  const styleIdToProps = {};
   const stylesXmlBytes = files['word/styles.xml'];
   if (stylesXmlBytes) {
-    _buildStyleIdMap(decoder(stylesXmlBytes), styleIdToName);
+    _buildStyleIdMap(decoder(stylesXmlBytes), styleIdToName, styleIdToProps);
   }
 
-  const parser = new XMLParser(xmlParserOptions);
-  const doc = parser.parse(docXmlStr);
-
-  const body = _dig(doc, 'w:document', 'w:body');
-  if (!body) return [];
-
-  const blocks = [];
-
-  // body 내의 요소 순회 (w:p, w:tbl)
-  const paragraphs = body['w:p'] || [];
-  const tables = body['w:tbl'] || [];
-
-  // 순서 유지를 위해 원본 XML의 순서대로 처리해야 하지만
-  // fast-xml-parser는 같은 이름의 형제를 배열로 그룹화한다.
-  // preserveOrder: true 를 쓰면 순서 보존되지만 접근이 복잡해진다.
-  // 대안: preserveOrder 모드로 재파싱
-  const orderedBlocks = _parseBodyOrdered(docXmlStr, styleIdToName);
+  const orderedBlocks = _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps);
   return orderedBlocks;
 }
 
@@ -100,14 +85,13 @@ export function parseDocx(base64Data) {
 /**
  * preserveOrder 모드로 body를 파싱하여 요소 순서를 유지한다.
  */
-function _parseBodyOrdered(docXmlStr, styleIdToName) {
+function _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps) {
   const parser = new XMLParser({
     ...xmlParserOptions,
     preserveOrder: true,
   });
   const ordered = parser.parse(docXmlStr);
 
-  // preserveOrder에서는 [{tagName: [...children], ':@': {attrs}}] 형태
   const docNode = _findOrdered(ordered, 'w:document');
   if (!docNode) return [];
   const bodyNode = _findOrdered(docNode['w:document'], 'w:body');
@@ -118,7 +102,7 @@ function _parseBodyOrdered(docXmlStr, styleIdToName) {
 
   for (const child of bodyChildren) {
     if (child['w:p'] !== undefined) {
-      const block = _parseParagraphOrdered(child, styleIdToName);
+      const block = _parseParagraphOrdered(child, styleIdToName, styleIdToProps);
       if (block) blocks.push(block);
     } else if (child['w:tbl'] !== undefined) {
       const block = _parseTableOrdered(child, styleIdToName);
@@ -137,9 +121,10 @@ function _findOrdered(arr, tagName) {
   return null;
 }
 
-function _parseParagraphOrdered(pNode, styleIdToName) {
+function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps) {
   const pChildren = pNode['w:p'] || [];
   let irType = 'body';
+  let styleId = '';
   let align = null;
   let indentLeft = 0;
   let spaceBefore = 0;
@@ -158,7 +143,7 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
       const pStyleNode = _findOrdered(pPrChildren, 'w:pStyle');
       if (pStyleNode) {
         const attrs = pStyleNode[':@'] || {};
-        const styleId = attrs['@_w:val'] || '';
+        styleId = attrs['@_w:val'] || '';
         irType = _mapStyle(styleId, styleIdToName);
       }
       // 정렬 (w:jc)
@@ -220,32 +205,35 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
     return { type: 'image', runs: [{ text: '이미지', bold: false }] };
   }
 
-  // 원본 스타일 구성: 단락 rPr → 첫 번째 런에서 보완
+  // 원본 스타일 구성: 단락 rPr → 런 → styles.xml 순으로 fallback
   const firstRun = runs[0];
-  const origFont = pprFont || (firstRun && firstRun._font) || null;
-  const origSize = pprSize || (firstRun && firstRun._size) || 0;
-  const origBold = pprBold || (firstRun && firstRun.bold) || false;
+  const sp = (styleIdToProps || {})[styleId] || {};
+  const origFont = pprFont || (firstRun && firstRun._font) || sp.font || null;
+  const origSize = pprSize || (firstRun && firstRun._size) || sp.size || 0;
+  const origBold = pprBold || (firstRun && firstRun.bold) || sp.bold || false;
+  const origAlign = align || sp.align || null;
+  const origLineHeight = lineHeight || sp.lineHeight || 0;
 
   // 런에서 내부 필드 제거
   for (const r of runs) { delete r._font; delete r._size; }
 
   const result = { type: irType, runs: runs.length > 0 ? runs : [{ text: '', bold: false }] };
-  if (align) result.align = align;
+  if (origAlign) result.align = origAlign;
   if (indentLeft) result.indent_left_hwpunit = indentLeft;
   if (spaceBefore) result.space_before_hwpunit = spaceBefore;
   if (spaceAfter) result.space_after_hwpunit = spaceAfter;
 
-  // 원본 스타일 (하나라도 있으면 추가)
+  // 원본 스타일
   const os = {};
   if (origFont) os.font = origFont;
   if (origSize) os.size_pt = origSize;
   os.bold = origBold;
-  if (align) os.align = align;
-  if (lineHeight) os.line_height_percent = lineHeight;
+  if (origAlign) os.align = origAlign;
+  if (origLineHeight) os.line_height_percent = origLineHeight;
   if (indentLeft) os.indent_left_hwpunit = indentLeft;
   if (spaceBefore) os.space_before_hwpunit = spaceBefore;
   if (spaceAfter) os.space_after_hwpunit = spaceAfter;
-  if (Object.keys(os).length > 1) result.originalStyle = os;  // bold만 있으면 생략
+  if (origFont || origSize) result.originalStyle = os;
 
   return result;
 }
@@ -381,9 +369,9 @@ function _parseCellOrdered(tcNode, styleIdToName) {
 
 
 /**
- * word/styles.xml에서 스타일 ID → 이름 매핑 구축
+ * word/styles.xml에서 스타일 ID → 이름 매핑 + 스타일 속성(폰트/크기/줄간격) 추출
  */
-function _buildStyleIdMap(stylesXml, map) {
+function _buildStyleIdMap(stylesXml, nameMap, propsMap) {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
@@ -396,7 +384,34 @@ function _buildStyleIdMap(stylesXml, map) {
     const id = style['@_w:styleId'] || '';
     const nameNode = style['w:name'];
     const name = nameNode ? (nameNode['@_w:val'] || '') : '';
-    if (id && name) map[id] = name;
+    if (id && name) nameMap[id] = name;
+
+    // 스타일 속성 추출 (rPr, pPr)
+    const props = {};
+    const rPr = style['w:rPr'];
+    if (rPr) {
+      const rFonts = rPr['w:rFonts'];
+      if (rFonts) props.font = rFonts['@_w:eastAsia'] || rFonts['@_w:ascii'] || rFonts['@_w:hAnsi'] || null;
+      const sz = rPr['w:sz'];
+      if (sz && sz['@_w:val']) props.size = parseInt(sz['@_w:val'], 10) / 2;
+      if (rPr['w:b'] !== undefined) props.bold = true;
+    }
+    const pPr = style['w:pPr'];
+    if (pPr) {
+      const jc = pPr['w:jc'];
+      if (jc) {
+        const val = jc['@_w:val'] || '';
+        const map = { left: 'left', center: 'center', right: 'right', both: 'justify', justify: 'justify' };
+        if (map[val]) props.align = map[val];
+      }
+      const sp = pPr['w:spacing'];
+      if (sp) {
+        const line = parseInt(sp['@_w:line'] || '0', 10);
+        const lineRule = sp['@_w:lineRule'] || 'auto';
+        if (line && lineRule === 'auto') props.lineHeight = Math.round(line / 240 * 100);
+      }
+    }
+    if (id && Object.keys(props).length > 0) propsMap[id] = props;
   }
 }
 
