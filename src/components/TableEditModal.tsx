@@ -582,7 +582,7 @@ export function TableEditModal({ block }: Props) {
                         <button key={a}
                           onClick={() => forEachSelected((r, c) => setCellAligns(p => { const n = p.map(r => [...r]); n[r][c] = a; return n }))}
                           className={`flex-1 py-1 text-[10px] transition-colors ${cellAligns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-600 text-white' : 'bg-white text-navy-600 hover:bg-navy-50'}`}>
-                          <AlignIcon align={a} />
+                          {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
                         </button>
                       ))}
                     </div>

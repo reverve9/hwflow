@@ -132,7 +132,7 @@ export function BlockStyleModal({ block }: Props) {
                               overrideStyle.align === a ? 'bg-navy-600 text-white' : 'bg-[#f5f5f5] text-navy-600 hover:bg-navy-50'
                             }`}
                           >
-                            <AlignIcon align={a} />
+                            {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
                           </button>
                         ))}
                       </div>
