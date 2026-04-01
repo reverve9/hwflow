@@ -323,24 +323,49 @@ export function TableEditModal({ block }: Props) {
       const on = { ...line }
       const off = { ...NONE_CELL_BORDER }
 
-      // 외곽선
-      for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = f.outerTop ? { ...on } : { ...off }
-      for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[1]][c].bottom = f.outerBottom ? { ...on } : { ...off }
-      for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = f.outerLeft ? { ...on } : { ...off }
-      for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[1]].right = f.outerRight ? { ...on } : { ...off }
+      // 렌더링 기준: 첫행 top, 첫열 left, 모든 셀 bottom/right
+      // 따라서 프리셋도 이 기준으로 설정
 
-      // 개별 방향: 모든 셀의 해당 변
-      if (f.allTop) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].top = { ...on }
-      if (f.allBottom) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...on }
-      if (f.allLeft) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].left = { ...on }
-      if (f.allRight) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].right = { ...on }
+      // 1) 외곽 상단: 첫 행의 top
+      for (let c = cRange[0]; c <= cRange[1]; c++)
+        next[rRange[0]][c].top = f.outerTop ? { ...on } : { ...off }
+      // 2) 외곽 하단: 마지막 행의 bottom
+      for (let c = cRange[0]; c <= cRange[1]; c++)
+        next[rRange[1]][c].bottom = f.outerBottom ? { ...on } : { ...off }
+      // 3) 외곽 좌측: 첫 열의 left
+      for (let r = rRange[0]; r <= rRange[1]; r++)
+        next[r][cRange[0]].left = f.outerLeft ? { ...on } : { ...off }
+      // 4) 외곽 우측: 마지막 열의 right
+      for (let r = rRange[0]; r <= rRange[1]; r++)
+        next[r][cRange[1]].right = f.outerRight ? { ...on } : { ...off }
 
-      // 내부선: 한쪽만 적용 (bottom/right만, 겹침 방지)
+      // 5) 개별 방향: top은 첫행 top + 나머지 행은 윗셀 bottom으로 표현
+      if (f.allTop) {
+        for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = { ...on }
+        for (let r = rRange[0]; r < rRange[1]; r++)
+          for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...on }
+      }
+      if (f.allBottom) {
+        for (let r = rRange[0]; r <= rRange[1]; r++)
+          for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...on }
+      }
+      if (f.allLeft) {
+        for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = { ...on }
+        for (let c = cRange[0]; c < cRange[1]; c++)
+          for (let r = rRange[0]; r <= rRange[1]; r++) next[r][c].right = { ...on }
+      }
+      if (f.allRight) {
+        for (let r = rRange[0]; r <= rRange[1]; r++)
+          for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].right = { ...on }
+      }
+
+      // 6) 내부 가로선: 행 사이 bottom
       if (rRange[1] > rRange[0]) {
         for (let r = rRange[0]; r < rRange[1]; r++)
           for (let c = cRange[0]; c <= cRange[1]; c++)
             next[r][c].bottom = f.innerH ? { ...on } : { ...off }
       }
+      // 7) 내부 세로선: 열 사이 right
       if (cRange[1] > cRange[0]) {
         for (let c = cRange[0]; c < cRange[1]; c++)
           for (let r = rRange[0]; r <= rRange[1]; r++)
@@ -424,9 +449,9 @@ export function TableEditModal({ block }: Props) {
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
                             onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
                           >
-                            {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.top) }} />}
+                            {r === 0 && borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.top) }} />}
                             {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.bottom) }} />}
-                            {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: bdrW(borders.left) }} />}
+                            {c === 0 && borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: bdrW(borders.left) }} />}
                             {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black" style={{ width: bdrW(borders.right) }} />}
 
                             {/* 병합 표시 */}
