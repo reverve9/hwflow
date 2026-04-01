@@ -14,10 +14,29 @@ import { SettingsModal } from '@/components/SettingsModal'
 import { LoginPage } from '@/components/LoginPage'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { loadSettings, saveDraft, loadDraft, hasDraft, formatDraftTime } from '@/lib/autosave'
-import { getSession, logout } from '@/lib/auth'
+import { logout, getProfile, onAuthChange } from '@/lib/auth'
+import type { Profile } from '@/lib/auth'
 
 export default function App() {
-  const [authed, setAuthed] = useState(() => !!getSession())
+  const [authed, setAuthed] = useState(false)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Supabase 인증 상태 구독
+  useEffect(() => {
+    const sub = onAuthChange(async (user) => {
+      if (user) {
+        const p = await getProfile()
+        setProfile(p)
+        setAuthed(!!p?.approved)
+      } else {
+        setProfile(null)
+        setAuthed(false)
+      }
+      setAuthLoading(false)
+    })
+    return () => sub.unsubscribe()
+  }, [])
   const {
     inputMode, irBlocks, showInspector, showSplitPreview,
     showBlockModal, showStyleSettings,
@@ -73,8 +92,38 @@ export default function App() {
     setDraftBanner(null)
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f0f0f0]">
+        <p className="text-[13px] text-gray-400">로딩 중...</p>
+      </div>
+    )
+  }
+
   if (!authed) {
-    return <LoginPage onLogin={() => setAuthed(true)} />
+    // 로그인은 됐지만 미승인
+    if (profile && !profile.approved) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#f0f0f0]">
+          <div className="w-[360px] text-center">
+            <h1 className="text-2xl font-bold text-navy-800 tracking-tight mb-2">HWFlow</h1>
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <p className="text-[13px] text-gray-600">승인 대기 중입니다.</p>
+              <p className="text-[11px] text-gray-400">관리자가 계정을 승인하면 사용할 수 있습니다.</p>
+              <button
+                onClick={async () => { await logout(); setProfile(null) }}
+                className="text-[11px] text-gray-400 hover:text-navy-600 transition-colors"
+              >로그아웃</button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return <LoginPage onLogin={async () => {
+      const p = await getProfile()
+      setProfile(p)
+      setAuthed(!!p?.approved)
+    }} />
   }
 
   return (
@@ -137,7 +186,7 @@ export default function App() {
           : <BlockStyleModal block={block} />
       )}
       {showStyleSettings && <StyleManager />}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onLogout={() => { setShowSettings(false); logout(); setAuthed(false) }} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onLogout={async () => { setShowSettings(false); await logout(); setProfile(null); setAuthed(false) }} />}
 
       {/* 새 창 미리보기 */}
       {showPreviewWindow && hasBlocks && (

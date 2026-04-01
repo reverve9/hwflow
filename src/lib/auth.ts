@@ -1,60 +1,69 @@
 /**
- * auth.ts — 인증 (추후 Supabase Auth로 교체)
+ * auth.ts — Supabase 인증 (멀티테넌트)
  */
 
-const SESSION_KEY = 'hwflow_session'
-const REMEMBER_KEY = 'hwflow_remember'
+import { supabase } from './supabase'
+import type { User } from '@supabase/supabase-js'
 
-// TODO: Supabase Auth 연동 시 제거
-const ACCOUNTS: Record<string, string> = {
-  'reverve9@naver.com': '123456',
-  'ahnsujung@korea.kr': 'spahspah512!',
-}
-
-export interface Session {
+export interface Profile {
+  id: string
   email: string
-  loggedInAt: string
+  display_name: string | null
+  tenant_id: string | null
+  role: 'admin' | 'member'
+  approved: boolean
 }
 
-export function login(email: string, password: string): { ok: boolean; error?: string } {
-  const normalized = email.trim().toLowerCase()
-  if (!normalized) return { ok: false, error: '이메일을 입력해주세요.' }
-  if (!password) return { ok: false, error: '비밀번호를 입력해주세요.' }
-  const expected = ACCOUNTS[normalized]
-  if (!expected || expected !== password) {
-    return { ok: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' }
-  }
-  const session: Session = { email: normalized, loggedInAt: new Date().toISOString() }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+/** 회원가입 */
+export async function signUp(email: string, password: string, displayName?: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: { data: { display_name: displayName ?? '' } },
+  })
+  if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
 
-export function logout() {
-  localStorage.removeItem(SESSION_KEY)
+/** 로그인 */
+export async function login(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
 }
 
-export function setRememberedEmail(email: string | null) {
-  if (email) localStorage.setItem(REMEMBER_KEY, email)
-  else localStorage.removeItem(REMEMBER_KEY)
+/** 로그아웃 */
+export async function logout() {
+  await supabase.auth.signOut()
 }
 
-export function getRememberedEmail(): string {
-  return localStorage.getItem(REMEMBER_KEY) ?? ''
+/** 현재 유저 */
+export async function getUser(): Promise<User | null> {
+  const { data } = await supabase.auth.getUser()
+  return data.user
 }
 
-const SESSION_TTL_MS = 6 * 60 * 60 * 1000 // 6시간
+/** 프로필 조회 */
+export async function getProfile(): Promise<Profile | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase.auth.getSession()
+  if (!data.session) return null
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+  return profile
+}
 
-export function getSession(): Session | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
-    const session: Session = JSON.parse(raw)
-    if (Date.now() - new Date(session.loggedInAt).getTime() > SESSION_TTL_MS) {
-      localStorage.removeItem(SESSION_KEY)
-      return null
-    }
-    return session
-  } catch {
-    return null
-  }
+/** 인증 상태 변경 구독 */
+export function onAuthChange(callback: (user: User | null) => void) {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(session?.user ?? null)
+  })
+  return subscription
 }

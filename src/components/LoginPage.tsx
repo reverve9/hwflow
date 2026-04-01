@@ -1,33 +1,45 @@
 import { useState } from 'react'
-import { login, getRememberedEmail, setRememberedEmail } from '@/lib/auth'
+import { login, signUp } from '@/lib/auth'
 
 interface Props {
   onLogin: () => void
 }
 
 export function LoginPage({ onLogin }: Props) {
-  const remembered = getRememberedEmail()
-  const [email, setEmail] = useState(remembered)
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(!!remembered)
+  const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    const result = await login(email, password)
+    if (result.ok) {
+      onLogin()
+    } else {
+      setError(result.error ?? '로그인 실패')
+    }
+    setLoading(false)
+  }
 
-    setTimeout(() => {
-      const result = login(email, password)
-      if (result.ok) {
-        setRememberedEmail(remember ? email.trim().toLowerCase() : null)
-        onLogin()
-      } else {
-        setError(result.error ?? '로그인 실패')
-      }
-      setLoading(false)
-    }, 300)
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password.length < 6) { setError('비밀번호는 6자 이상이어야 합니다.'); return }
+    setLoading(true)
+    setError('')
+    const result = await signUp(email, password, displayName)
+    if (result.ok) {
+      setMessage('가입 완료! 관리자 승인 후 로그인할 수 있습니다.')
+      setMode('login')
+    } else {
+      setError(result.error ?? '가입 실패')
+    }
+    setLoading(false)
   }
 
   return (
@@ -37,12 +49,37 @@ export function LoginPage({ onLogin }: Props) {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-navy-800 tracking-tight">HWFlow</h1>
           <p className="text-[13px] text-gray-400 mt-1">HWPX 변환 도구</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">안수정 박사 잡무 덜어주기 프로젝트 II</p>
         </div>
 
-        {/* 로그인 카드 */}
+        {/* 카드 */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 탭 */}
+          <div className="flex mb-5 border-b border-gray-100">
+            <button
+              onClick={() => { setMode('login'); setError(''); setMessage('') }}
+              className={`flex-1 pb-2.5 text-[13px] font-medium transition-colors ${mode === 'login' ? 'text-navy-700 border-b-2 border-navy-600' : 'text-gray-400 hover:text-gray-500'}`}
+            >로그인</button>
+            <button
+              onClick={() => { setMode('signup'); setError(''); setMessage('') }}
+              className={`flex-1 pb-2.5 text-[13px] font-medium transition-colors ${mode === 'signup' ? 'text-navy-700 border-b-2 border-navy-600' : 'text-gray-400 hover:text-gray-500'}`}
+            >회원가입</button>
+          </div>
+
+          <form onSubmit={mode === 'login' ? handleLogin : handleSignUp} className="space-y-4">
+            {mode === 'signup' && (
+              <div>
+                <label className="text-[11px] font-medium text-gray-500 block mb-1.5">이름</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={e => { setDisplayName(e.target.value); setError('') }}
+                  placeholder="홍길동"
+                  autoComplete="name"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 placeholder:text-gray-300 outline-none focus:border-navy-400 focus:ring-2 focus:ring-navy-100 transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-[11px] font-medium text-gray-500 block mb-1.5">이메일</label>
               <input
@@ -62,20 +99,17 @@ export function LoginPage({ onLogin }: Props) {
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError('') }}
-                placeholder="비밀번호"
-                autoComplete="current-password"
+                placeholder={mode === 'signup' ? '6자 이상' : '비밀번호'}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 placeholder:text-gray-300 outline-none focus:border-navy-400 focus:ring-2 focus:ring-navy-100 transition-all"
               />
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
-                className="accent-navy-500 rounded" />
-              <span className="text-[11px] text-gray-500">로그인 정보 기억</span>
-            </label>
-
             {error && (
               <p className="text-[11px] text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            )}
+            {message && (
+              <p className="text-[11px] text-green-600 bg-green-50 rounded-lg px-3 py-2">{message}</p>
             )}
 
             <button
@@ -83,12 +117,12 @@ export function LoginPage({ onLogin }: Props) {
               disabled={loading || !email.trim() || !password}
               className="w-full py-2.5 rounded-lg bg-navy-600 text-white text-[13px] font-medium hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
-              {loading ? '확인 중...' : '로그인'}
+              {loading ? '처리 중...' : mode === 'login' ? '로그인' : '가입하기'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-[10px] text-gray-300 mt-6">v0.1.0</p>
+        <p className="text-center text-[10px] text-gray-300 mt-6">v0.2.0</p>
       </div>
     </div>
   )

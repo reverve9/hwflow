@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal, ModalHeader, ModalSection, FieldLabel } from './Modal'
 import { loadSettings, saveSettings, loadDraft, saveDraft, clearDraft, formatDraftTime, type AppSettings } from '@/lib/autosave'
-import { getSession } from '@/lib/auth'
 import { useAppStore } from '@/store/useAppStore'
+import { supabase } from '@/lib/supabase'
 
 interface Props {
   onClose: () => void
@@ -12,8 +12,12 @@ interface Props {
 export function SettingsModal({ onClose, onLogout }: Props) {
   const [settings, setSettings] = useState<AppSettings>(loadSettings)
   const [saved, setSaved] = useState('')
+  const [email, setEmail] = useState('')
   const draft = loadDraft()
-  const session = getSession()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => { if (data.user?.email) setEmail(data.user.email) })
+  }, [])
 
   const update = (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch }
@@ -62,7 +66,7 @@ export function SettingsModal({ onClose, onLogout }: Props) {
         <ModalSection label="계정">
           <div className="bg-white rounded-lg border border-app-border p-3 flex items-center justify-between">
             <div>
-              <p className="text-[11px] text-navy-800">{session?.email ?? '-'}</p>
+              <p className="text-[11px] text-navy-800">{email || '-'}</p>
             </div>
             <button onClick={onLogout}
               className="px-3 py-1.5 text-[11px] rounded-md border border-app-border text-red-500 hover:bg-red-50 transition-colors">
