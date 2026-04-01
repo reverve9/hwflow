@@ -155,9 +155,9 @@ function detectTables(elements: PageElement[]): PageElement[] {
     const el = elements[i]
     if (el.type !== 'line' || !el.line) { result.push(el); i++; continue }
 
-    // 셀이 3개 이상 + 셀 간 갭이 충분해야 표 행 후보
+    // 셀이 2개 이상이면 표 행 후보
     const cells = mergeAdjacentCells(el.line.cells)
-    if (cells.length < 3) { result.push(el); i++; continue }
+    if (cells.length < 2) { result.push(el); i++; continue }
 
     // 연속된 줄 중 비슷한 컬럼 수 + 컬럼 X좌표가 정렬된 것들만 모음
     const tableRows: PageElement[] = [el]
@@ -166,7 +166,7 @@ function detectTables(elements: PageElement[]): PageElement[] {
       const next = elements[j]
       if (next.type !== 'line' || !next.line) break
       const nextCells = mergeAdjacentCells(next.line.cells)
-      if (nextCells.length < 3) break
+      if (nextCells.length < 2) break
       // 컬럼 수 일치 + 첫 번째 컬럼 X좌표가 비슷해야 함
       const xAligned = Math.abs(nextCells[0].x - cells[0].x) < 20
       if (Math.abs(nextCells.length - cells.length) <= 1 && xAligned) {
@@ -177,8 +177,8 @@ function detectTables(elements: PageElement[]): PageElement[] {
       }
     }
 
-    // 최소 3행 이상이어야 표로 인식
-    if (tableRows.length >= 3) {
+    // 최소 2행 이상이어야 표로 인식
+    if (tableRows.length >= 2) {
       result.push({
         type: 'line' as const,
         y: el.y,
