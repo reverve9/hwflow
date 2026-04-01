@@ -342,13 +342,17 @@ function _parseTable(tblNode, header) {
   const tblChildren = tblNode['tbl'] || [];
   const rawRows = [];
 
+  // 표 전체 너비 추출
+  const szNode = _findTag(tblChildren, 'sz');
+  const tblWidth = szNode ? parseInt((szNode[':@'] || {})['@_width'] || '0', 10) : 0;
+
   for (const child of tblChildren) {
     if (child['tr'] !== undefined) {
       const trChildren = child['tr'] || [];
       const cells = [];
       for (const tcNode of trChildren) {
         if (tcNode['tc'] !== undefined) {
-          cells.push(_parseCell(tcNode, header));
+          cells.push(_parseCell(tcNode, header, tblWidth));
         }
       }
       if (cells.length > 0) rawRows.push(cells);
@@ -357,7 +361,6 @@ function _parseTable(tblNode, header) {
 
   if (rawRows.length === 0) return { type: 'table', rows: [], has_header: false };
 
-  // 2-pass 빌드 (korean-law-mcp 참조)
   return _buildTable(rawRows);
 }
 
@@ -437,10 +440,11 @@ function _buildTable(rawRows) {
 
 // ─── 셀 파싱 ────────────────────────────────────────────
 
-function _parseCell(tcNode, header) {
+function _parseCell(tcNode, header, tblWidth) {
   const tcChildren = tcNode['tc'] || [];
   const runs = [];
   let colspan = 1, rowspan = 1;
+  let widthPct = 0;
 
   // cellSpan 태그 (korean-law-mcp 참조)
   const cellSpanNode = _findTag(tcChildren, 'cellSpan');
@@ -467,13 +471,32 @@ function _parseCell(tcNode, header) {
   if (tcAttrs['@_colSpan']) colspan = Math.max(colspan, parseInt(tcAttrs['@_colSpan'], 10));
   if (tcAttrs['@_rowSpan']) rowspan = Math.max(rowspan, parseInt(tcAttrs['@_rowSpan'], 10));
 
-  // cellPr에서 span
+  // cellSz에서 셀 너비
+  const cellSzNode = _findTag(tcChildren, 'cellSz');
+  if (cellSzNode && tblWidth > 0) {
+    const cellW = parseInt((cellSzNode[':@'] || {})['@_width'] || '0', 10);
+    if (cellW > 0) widthPct = Math.round(cellW / tblWidth * 1000) / 10;
+  }
+
+  // cellPr에서 span + bgColor
   let bgColor = null;
   const cellPrNode = _findTag(tcChildren, 'cellPr');
   if (cellPrNode) {
     const cpAttrs = cellPrNode[':@'] || {};
     if (cpAttrs['@_colSpan']) colspan = Math.max(colspan, parseInt(cpAttrs['@_colSpan'], 10));
     if (cpAttrs['@_rowSpan']) rowspan = Math.max(rowspan, parseInt(cpAttrs['@_rowSpan'], 10));
+    // fillBrush에서 배경색
+    const cpChildren = cellPrNode['cellPr'] || [];
+    const fillNode = _findTag(cpChildren, 'fillBrush');
+    if (fillNode) {
+      const fbChildren = fillNode['fillBrush'] || [];
+      const winBrush = _findTag(fbChildren, 'winBrush');
+      if (winBrush) {
+        const faceColor = (winBrush[':@'] || {})['@_faceColor'];
+        if (faceColor && faceColor !== 'none' && faceColor !== 'white')
+          bgColor = '#' + faceColor.replace('#', '');
+      }
+    }
   }
 
   // 셀 내 단락 — tc > p 또는 tc > subList > p 모두 탐색
@@ -497,7 +520,9 @@ function _parseCell(tcNode, header) {
   }
 
   if (runs.length === 0) runs.push({ text: '', bold: false });
-  return { runs, align: 'left', valign: 'center', bgColor, colspan, rowspan };
+  const cell = { runs, align: 'left', valign: 'center', bgColor, colspan, rowspan };
+  if (widthPct > 0) cell.widthPct = widthPct;
+  return cell;
 }
 
 // ─── 유틸 ───────────────────────────────────────────────
