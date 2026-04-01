@@ -1,4 +1,4 @@
-import { useAppStore, irBlockFromDict } from '@/store/useAppStore'
+import { useAppStore, irBlocksFromDicts } from '@/store/useAppStore'
 // @ts-ignore
 import { parseMarkdown } from '@/lib/parser_markdown'
 
@@ -9,7 +9,7 @@ export function PasteInput() {
     if (!pasteText.trim()) return
     try {
       const blocks = parseMarkdown(pasteText)
-      const irBlocks = blocks.map((b: Record<string, unknown>) => irBlockFromDict(b))
+      const irBlocks = irBlocksFromDicts(blocks)
       setIRBlocks(irBlocks)
       if (irBlocks.length > 0 && !useAppStore.getState().documentTitle) {
         setDocumentTitle(irBlocks[0].text.slice(0, 30))

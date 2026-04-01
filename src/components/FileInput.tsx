@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef } from 'react'
-import { useAppStore, irBlockFromDict } from '@/store/useAppStore'
+import { useAppStore, irBlocksFromDicts } from '@/store/useAppStore'
 // @ts-ignore
 import { parseMarkdown } from '@/lib/parser_markdown'
 // @ts-ignore
@@ -45,7 +45,7 @@ export function FileInput() {
         return
       }
 
-      const irBlocks = blocks.map(b => irBlockFromDict(b))
+      const irBlocks = irBlocksFromDicts(blocks)
       setIRBlocks(irBlocks)
       setDocumentTitle(file.name.replace(/\.[^.]+$/, ''))
       setConversionMessage('')
