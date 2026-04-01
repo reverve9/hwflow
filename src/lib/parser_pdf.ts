@@ -145,6 +145,7 @@ function groupIntoLines(items: TextItem[]): LineGroup[] {
 
 /**
  * 표 감지: 연속된 줄들이 비슷한 X좌표 패턴(컬럼)을 가지면 표로 인식
+ * Y좌표가 가까운 줄은 같은 행으로 병합 (여러 줄에 걸친 셀 지원)
  * 최소 2행, 2열 이상이어야 표로 판정
  */
 function detectTables(elements: PageElement[]): PageElement[] {
@@ -155,39 +156,72 @@ function detectTables(elements: PageElement[]): PageElement[] {
     const el = elements[i]
     if (el.type !== 'line' || !el.line) { result.push(el); i++; continue }
 
-    // 셀이 2개 이상이면 표 행 후보
     const cells = mergeAdjacentCells(el.line.cells)
     if (cells.length < 2) { result.push(el); i++; continue }
 
-    // 연속된 줄 중 비슷한 컬럼 수 + 컬럼 X좌표가 정렬된 것들만 모음
-    const tableRows: PageElement[] = [el]
+    // 연속된 줄 수집 (셀 2개 이상 또는 Y좌표가 가까운 줄)
+    const candidateLines: PageElement[] = [el]
     let j = i + 1
     while (j < elements.length) {
       const next = elements[j]
       if (next.type !== 'line' || !next.line) break
       const nextCells = mergeAdjacentCells(next.line.cells)
-      if (nextCells.length < 2) break
-      // 컬럼 수 일치 + 첫 번째 컬럼 X좌표가 비슷해야 함
-      const xAligned = Math.abs(nextCells[0].x - cells[0].x) < 20
-      if (Math.abs(nextCells.length - cells.length) <= 1 && xAligned) {
-        tableRows.push(next)
-        j++
-      } else {
-        break
+      const prevLine = candidateLines[candidateLines.length - 1]
+      const yGap = Math.abs(next.y - prevLine.y)
+      const closeY = yGap < (prevLine.line?.fontSize ?? 12) * 3
+
+      if (!closeY) break
+      // X좌표 정렬 확인 (첫 셀 기준)
+      if (nextCells.length >= 2) {
+        const xAligned = Math.abs(nextCells[0].x - cells[0].x) < 30
+        if (xAligned) { candidateLines.push(next); j++; continue }
       }
+      // 셀 1개라도 Y가 가까우면 이전 행에 합칠 수 있음
+      if (nextCells.length >= 1 && yGap < (prevLine.line?.fontSize ?? 12) * 1.5) {
+        candidateLines.push(next); j++; continue
+      }
+      break
     }
 
-    // 최소 2행 이상이어야 표로 인식
-    if (tableRows.length >= 2) {
+    // Y좌표로 행 그룹화: Y가 가까운 줄들을 하나의 행으로 묶기
+    const rowGroups: PageElement[][] = []
+    for (const line of candidateLines) {
+      const lastGroup = rowGroups[rowGroups.length - 1]
+      if (lastGroup) {
+        const lastY = lastGroup[lastGroup.length - 1].y
+        const gap = Math.abs(line.y - lastY)
+        if (gap < (line.line?.fontSize ?? 12) * 1.5) {
+          lastGroup.push(line)
+          continue
+        }
+      }
+      rowGroups.push([line])
+    }
+
+    // 각 행 그룹의 셀을 합치기
+    const mergedRows = rowGroups.map(group => {
+      const allCells: CellItem[] = []
+      for (const line of group) {
+        if (line.line) allCells.push(...line.line.cells)
+      }
+      return mergeAdjacentCells(allCells)
+    })
+
+    // 2열 이상인 행이 2개 이상이면 표
+    const validRows = mergedRows.filter(r => r.length >= 2)
+    if (validRows.length >= 2) {
+      // 최대 컬럼 수에 맞춰 정규화
+      const maxCols = Math.max(...validRows.map(r => r.length))
       result.push({
         type: 'line' as const,
         y: el.y,
         line: {
           ...el.line,
           text: '__TABLE__',
-          _tableData: tableRows.map(r => {
-            const rc = mergeAdjacentCells(r.line!.cells)
-            return rc.map(c => ({ text: c.text.trim(), bold: c.bold }))
+          _tableData: validRows.map(row => {
+            const padded = [...row]
+            while (padded.length < maxCols) padded.push({ text: '', bold: false, x: 0, width: 0, fontSize: 10 })
+            return padded.map(c => ({ text: c.text.trim(), bold: c.bold }))
           }),
         } as any,
       })
