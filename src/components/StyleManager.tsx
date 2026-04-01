@@ -60,12 +60,25 @@ export function StyleManager() {
     if (preset.style_mapping) setStyleMapping(preset.style_mapping)
   }, [selectedPreset])
 
-  const close = () => setShowStyleSettings(false)
+  const [dirty, setDirty] = useState(false)
+
+  // 변경 감지
+  const markDirty = () => { if (!dirty) setDirty(true) }
+
+  const close = () => {
+    if (dirty) {
+      if (confirm('변경사항이 저장되지 않았습니다. 저장하시겠습니까?')) {
+        handleSave()
+      }
+    }
+    setShowStyleSettings(false)
+  }
 
   const selectedStyle = styles.find(s => s.id === selectedStyleId)
 
   const updateStyleData = (id: string, patch: Partial<ParagraphStyleData>) => {
     setStyles(prev => prev.map(s => s.id === id ? { ...s, data: { ...s.data, ...patch } } : s))
+    markDirty()
   }
 
   const addStyle = (name: string, baseKey: string) => {
@@ -85,11 +98,13 @@ export function StyleManager() {
     setStyles(prev => [...prev, newStyle])
     setSelectedStyleId(newStyle.id)
     setShowMapping(false)
+    markDirty()
   }
 
   const deleteStyle = (id: string) => {
     setStyles(prev => prev.filter(s => s.id !== id))
     if (selectedStyleId === id) setSelectedStyleId(null)
+    markDirty()
   }
 
   const handleSave = () => {
@@ -113,6 +128,7 @@ export function StyleManager() {
     setAvailableStyleKeys(styles.map(s => s.key))
     setStyleDisplayNames(Object.fromEntries(styles.map(s => [s.key, s.displayName])))
     reloadPresets() // 미리보기 즉시 반영
+    setDirty(false)
     setSaveMessage('저장 완료')
     setTimeout(() => setSaveMessage(''), 3000)
   }

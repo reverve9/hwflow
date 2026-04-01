@@ -203,6 +203,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => {
   const presetList = loadPresetList()
   const defaultPreset = presetList[0]?.id ?? ''
+  const defaultPresetData = defaultPreset ? loadPresetData(defaultPreset) : null
 
   return {
     inputMode: 'file',
@@ -228,7 +229,7 @@ export const useAppStore = create<AppState>((set, get) => {
     tableHeaderOverrides: {},
     availableStyleKeys: ['heading1', 'heading2', 'heading3', 'heading4', 'body'],
     styleDisplayNames: {},
-    styleMapping: {},
+    styleMapping: defaultPresetData?.style_mapping ?? {},
 
     // 헬퍼
     getPresetData: () => loadPresetData(get().selectedPreset),
@@ -293,7 +294,12 @@ export const useAppStore = create<AppState>((set, get) => {
     setShowSplitPreview: (v) => set({ showSplitPreview: v }),
     setShowStyleSettings: (v) => set({ showStyleSettings: v }),
     setShowBlockModal: (v) => set({ showBlockModal: v }),
-    setSelectedPreset: (id) => set({ selectedPreset: id }),
+    setSelectedPreset: (id) => {
+      set({ selectedPreset: id })
+      // 프리셋 변경 시 style_mapping 자동 로드
+      const preset = loadPresetData(id)
+      if (preset?.style_mapping) set({ styleMapping: preset.style_mapping })
+    },
     setStyleMapping: (mapping) => set({ styleMapping: mapping }),
 
     setBlockTypeOverride: (blockId, type) => set(s => {
