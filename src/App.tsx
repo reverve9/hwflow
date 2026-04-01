@@ -14,7 +14,7 @@ import { SettingsModal } from '@/components/SettingsModal'
 import { LoginPage } from '@/components/LoginPage'
 import { AdminPanel } from '@/components/AdminPanel'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
-import { loadSettings, saveDraft, loadDraft, hasDraft, formatDraftTime } from '@/lib/autosave'
+import { loadSettings, saveDraft, loadDraft, hasDraft, clearDraft, formatDraftTime } from '@/lib/autosave'
 import { logout, getProfile, onAuthChange } from '@/lib/auth'
 import type { Profile } from '@/lib/auth'
 
@@ -67,37 +67,65 @@ export default function App() {
     initRef.current = true
     if (hasDraft() && irBlocks.length === 0) {
       const d = loadDraft()
-      if (d) setDraftBanner(formatDraftTime(d.savedAt))
+      if (d && Array.isArray(d.irBlocks) && d.irBlocks.length > 0) setDraftBanner(formatDraftTime(d.savedAt))
     }
   }, [authed])
 
-  // 자동 임시저장
+  // 자동 임시저장 — 변경 감지 후 디바운스
   useEffect(() => {
     if (!authed) return
     const settings = loadSettings()
     if (!settings.autoSave) return
-    const timer = setInterval(() => {
-      const s = useAppStore.getState()
-      if (s.irBlocks.length === 0) return
-      saveDraft({
-        documentTitle: s.documentTitle,
-        selectedPreset: s.selectedPreset,
-        selectedFileName: s.selectedFileName,
-        irBlocks: s.irBlocks,
-        blockOverrides: s.blockOverrides,
-        blockTypeOverrides: s.blockTypeOverrides,
-        blockTextOverrides: s.blockTextOverrides,
-        tableRowOverrides: s.tableRowOverrides,
-        tableHeaderOverrides: s.tableHeaderOverrides,
-        styleMapping: s.styleMapping,
-      })
-    }, settings.autoSaveInterval * 1000)
-    return () => clearInterval(timer)
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const delay = settings.autoSaveInterval * 1000
+
+    const unsub = useAppStore.subscribe((state, prev) => {
+      // 변경 감지: 블록/오버라이드/제목/프리셋/매핑
+      if (
+        state.irBlocks === prev.irBlocks &&
+        state.blockOverrides === prev.blockOverrides &&
+        state.blockTypeOverrides === prev.blockTypeOverrides &&
+        state.blockTextOverrides === prev.blockTextOverrides &&
+        state.tableRowOverrides === prev.tableRowOverrides &&
+        state.tableHeaderOverrides === prev.tableHeaderOverrides &&
+        state.styleMapping === prev.styleMapping &&
+        state.documentTitle === prev.documentTitle &&
+        state.selectedPreset === prev.selectedPreset
+      ) return
+      if (state.irBlocks.length === 0) return
+
+      // 디바운스: 마지막 변경 후 delay 후 저장
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        const s = useAppStore.getState()
+        if (s.irBlocks.length === 0) return
+        saveDraft({
+          documentTitle: s.documentTitle,
+          selectedPreset: s.selectedPreset,
+          selectedFileName: s.selectedFileName,
+          irBlocks: s.irBlocks,
+          blockOverrides: s.blockOverrides,
+          blockTypeOverrides: s.blockTypeOverrides,
+          blockTextOverrides: s.blockTextOverrides,
+          tableRowOverrides: s.tableRowOverrides,
+          tableHeaderOverrides: s.tableHeaderOverrides,
+          styleMapping: s.styleMapping,
+        })
+        timer = null
+      }, delay)
+    })
+
+    return () => { unsub(); if (timer) clearTimeout(timer) }
   }, [authed, showSettings])
 
   const handleRestoreDraft = () => {
     const d = loadDraft()
     if (d) useAppStore.getState().restoreDraft(d)
+    setDraftBanner(null)
+  }
+
+  const handleDismissDraft = () => {
+    clearDraft()
     setDraftBanner(null)
   }
 
@@ -148,7 +176,7 @@ export default function App() {
             className="px-2 py-0.5 rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors text-[11px]">
             복원
           </button>
-          <button onClick={() => setDraftBanner(null)}
+          <button onClick={handleDismissDraft}
             className="px-2 py-0.5 rounded-md border border-app-border text-navy-600 hover:bg-white transition-colors text-[11px]">
             무시
           </button>
