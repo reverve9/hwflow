@@ -487,7 +487,8 @@ export function TableEditModal({ block }: Props) {
               <div className="grid grid-cols-5 gap-1">
                 {PRESETS.map(p => (
                   <button key={p} onClick={() => applyPreset(p)}
-                    className="flex items-center justify-center bg-white border border-app-border rounded-md hover:bg-navy-50 transition-colors p-0.5">
+                    disabled={selectedCells.size === 0}
+                    className="flex items-center justify-center bg-white border border-app-border rounded-md hover:bg-navy-50 transition-colors p-0.5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white">
                     <BorderIcon preset={p} />
                   </button>
                 ))}
