@@ -168,9 +168,9 @@ export function DocumentPreview() {
                       <td key={cIdx} className="relative p-0"
                         colSpan={cs > 1 ? cs : undefined} rowSpan={rs > 1 ? rs : undefined}
                         style={{ backgroundColor: bg }}>
-                        {rIdx === 0 && cell.borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: borderLW(cell.borders.top) }} />}
+                        {cell.borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: borderLW(cell.borders.top) }} />}
                         {cell.borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black" style={{ height: borderLW(cell.borders.bottom) }} />}
-                        {cIdx === 0 && cell.borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: borderLW(cell.borders.left) }} />}
+                        {cell.borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: borderLW(cell.borders.left) }} />}
                         {cell.borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black" style={{ width: borderLW(cell.borders.right) }} />}
                         <div className="px-1 py-0.5" style={{
                           fontSize: (style?.size_pt ?? 10) * PT_TO_PX,
