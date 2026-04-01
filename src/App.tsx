@@ -17,8 +17,6 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { loadSettings, saveDraft, loadDraft, hasDraft, formatDraftTime } from '@/lib/autosave'
 import { logout, getProfile, onAuthChange } from '@/lib/auth'
 import type { Profile } from '@/lib/auth'
-import { loadPresetsFromDB } from '@/lib/presetDB'
-import { setDBPresets } from '@/store/useAppStore'
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
@@ -27,16 +25,11 @@ export default function App() {
 
   // Supabase 인증 상태
   useEffect(() => {
-    // 초기 세션 체크 + DB 프리셋 로드
-    getProfile().then(async p => {
+    // 초기 세션 체크
+    getProfile().then(p => {
       setProfile(p)
       setAuthed(!!p?.approved)
       setAuthLoading(false)
-      if (p?.approved) {
-        const dbPresets = await loadPresetsFromDB()
-        setDBPresets(dbPresets.map(pr => ({ id: pr.id, name: pr.name, data: pr.data as any })))
-        useAppStore.getState().reloadPresets()
-      }
     })
     // 이후 변경 구독
     const sub = onAuthChange(async (user) => {

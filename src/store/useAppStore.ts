@@ -7,30 +7,14 @@ import { STYLE_LABELS } from './types'
 import { takeSnapshot, undo as histUndo, redo as histRedo, pushToRedo, canUndo, canRedo } from './history'
 import type { EditSnapshot } from './history'
 
-// 동적으로 스타일 프리셋 모듈 로드
-const styleModules = import.meta.glob('../styles/*.json', { eager: true }) as Record<string, { default: StylePreset }>
-
 const PRESET_PREFIX = 'hwflow_preset_'
 
 function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }> {
   const list: Array<{ id: string; name: string; data: StylePreset }> = []
-  const seen = new Set<string>()
-  for (const [path, mod] of Object.entries(styleModules)) {
-    const filename = path.split('/').pop()?.replace('.json', '') ?? ''
-    const data = (mod as { default?: StylePreset }).default ?? (mod as unknown as StylePreset)
-    list.push({
-      id: filename,
-      name: data.meta?.name ?? filename,
-      data,
-    })
-    seen.add(filename)
-  }
-  // localStorage 커스텀 프리셋
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     if (!key?.startsWith(PRESET_PREFIX)) continue
     const id = key.slice(PRESET_PREFIX.length)
-    if (seen.has(id)) continue
     try {
       const data = JSON.parse(localStorage.getItem(key)!) as StylePreset
       list.push({ id, name: data.meta?.name ?? id, data })
@@ -39,25 +23,12 @@ function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }
   return list
 }
 
-// DB 프리셋 캐시
-let dbPresetCache: Array<{ id: string; name: string; data: StylePreset }> = []
-
-export function setDBPresets(presets: Array<{ id: string; name: string; data: StylePreset }>) {
-  dbPresetCache = presets
-}
-
 function loadPresetData(id: string): StylePreset | null {
-  // localStorage에 저장된 커스텀 프리셋 우선
   try {
     const saved = localStorage.getItem(`hwflow_preset_${id}`)
     if (saved) return JSON.parse(saved) as StylePreset
   } catch {}
-  // DB 프리셋
-  const dbPreset = dbPresetCache.find(p => p.id === id)
-  if (dbPreset) return dbPreset.data
-  // 번들 프리셋
-  const presets = loadPresetList()
-  return presets.find(p => p.id === id)?.data ?? null
+  return null
 }
 
 // nanoid-like
@@ -225,7 +196,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => {
   const presetList = loadPresetList()
-  const defaultPreset = presetList[0]?.id ?? '공문서_표준'
+  const defaultPreset = presetList[0]?.id ?? ''
 
   return {
     inputMode: 'file',
@@ -438,11 +409,8 @@ export const useAppStore = create<AppState>((set, get) => {
     setStyleDisplayNames: (names) => set({ styleDisplayNames: names }),
 
     reloadPresets: () => {
-      const local = loadPresetList()
-      const localIds = new Set(local.map(p => p.id))
-      const db = dbPresetCache.filter(p => !localIds.has(p.id))
-      const all = [...local, ...db]
-      set(s => ({ availablePresets: all.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
+      const list = loadPresetList()
+      set(s => ({ availablePresets: list.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
     },
 
     // Undo/Redo

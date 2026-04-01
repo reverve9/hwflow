@@ -4,8 +4,6 @@ import type { ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS, NUMBERING_OPTIONS } from '@/store/types'
 import { useFontList } from '@/lib/fonts'
 import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass, selectClass, AlignIcon } from './Modal'
-import { savePresetToDB } from '@/lib/presetDB'
-import { getProfile } from '@/lib/auth'
 
 interface EditableStyle {
   id: string
@@ -30,11 +28,6 @@ export function StyleManager() {
   const [showMapping, setShowMapping] = useState(false)
   const [pageMargin, setPageMargin] = useState({ top: 20, bottom: 15, left: 15, right: 15 })
   const [saveMessage, setSaveMessage] = useState('')
-  const [myRole, setMyRole] = useState<string>('member')
-
-  useEffect(() => {
-    getProfile().then(p => { if (p) setMyRole(p.role) })
-  }, [])
 
   // 프리셋 로드
   useEffect(() => {
@@ -74,9 +67,15 @@ export function StyleManager() {
 
   const addStyle = (name: string, baseKey: string) => {
     const base = styles.find(s => s.key === baseKey)?.data
-    const key = name.toLowerCase().replace(/\s+/g, '_')
+    const baseId = name.toLowerCase().replace(/\s+/g, '_')
+    // 중복 ID 방지
+    let key = baseId
+    let n = 1
+    while (styles.some(s => s.id === key)) {
+      key = `${baseId}_${++n}`
+    }
     const newStyle: EditableStyle = {
-      id: key, key, displayName: name,
+      id: key, key, displayName: n > 1 ? `${name} ${n}` : name,
       data: base ? { ...base } : { font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify', indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0, line_height_percent: 160 },
       isBuiltin: false,
     }
@@ -158,33 +157,6 @@ export function StyleManager() {
     setTimeout(() => setSaveMessage(''), 2000)
   }
 
-  const handleSaveToDB = async () => {
-    const preset = getPresetData()
-    if (!preset) return
-    const paragraphStyles: Record<string, ParagraphStyleData & { display_name?: string }> = {}
-    for (const s of styles) {
-      paragraphStyles[s.key] = { ...s.data }
-      if (s.displayName !== (STYLE_LABELS[s.key] ?? s.key) || !s.isBuiltin) {
-        paragraphStyles[s.key].display_name = s.displayName
-      }
-    }
-    const data = {
-      ...preset,
-      page: { ...preset.page, margin: { top_mm: pageMargin.top, bottom_mm: pageMargin.bottom, left_mm: pageMargin.left, right_mm: pageMargin.right } },
-      paragraph_styles: paragraphStyles,
-      style_mapping: styleMapping,
-    }
-    const name = preset.meta?.name ?? selectedPreset
-    const tenantId = myRole === 'super_admin' ? null : undefined
-    const result = await savePresetToDB(name, data as any, tenantId)
-    if (result.ok) {
-      setSaveMessage('서버 저장 완료')
-    } else {
-      setSaveMessage(result.error ?? '서버 저장 실패')
-    }
-    setTimeout(() => setSaveMessage(''), 2000)
-  }
-
   const handleExport = () => {
     const preset = getPresetData()
     if (!preset) return
@@ -246,9 +218,6 @@ export function StyleManager() {
             </svg>
           </button>
           <div className="flex-1" />
-          {myRole !== 'member' && (
-            <button onClick={handleSaveToDB} className="text-[11px] text-navy-600 hover:text-navy-800 font-medium transition-colors">서버 저장</button>
-          )}
           <button onClick={handleExport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">내보내기</button>
           <button onClick={handleImport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">가져오기</button>
         </div>
@@ -273,6 +242,9 @@ export function StyleManager() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
               </svg>
               스타일 매핑
+              {Object.keys(styleMapping).length > 0 && (
+                <span className="ml-auto text-[10px] text-orange-500">{Object.keys(styleMapping).length}</span>
+              )}
             </button>
 
             <hr className="border-app-border/50" />
@@ -433,48 +405,75 @@ function StyleEditForm({ style, onUpdate, onRename, onKeyChange }: {
 }
 
 function MappingPanel({ styles }: { styles: EditableStyle[] }) {
-  const { styleMapping, setStyleMapping, displayName } = useAppStore()
+  const { styleMapping, setStyleMapping } = useAppStore()
   const mapping = { ...styleMapping }
+  const activeKeys = Object.keys(mapping).filter(k => mapping[k] && mapping[k] !== k)
+  const availableKeys = PARSER_KEYS.filter(k => !activeKeys.includes(k))
+
+  const handleAdd = () => {
+    if (availableKeys.length === 0) return
+    const key = availableKeys[0]
+    // 기본값과 다른 첫 번째 스타일로 매핑
+    const target = styles.find(s => s.key !== key)?.key ?? key
+    setStyleMapping({ ...mapping, [key]: target })
+  }
 
   return (
     <div className="space-y-5">
-      <div className="text-[13px] font-semibold text-navy-800">스타일 매핑</div>
-      <p className="text-[11px] text-app-muted">파서가 판단한 스타일을 원하는 스타일로 일괄 변환합니다.</p>
-
-      <div className="bg-white rounded-lg border border-app-border p-4 space-y-3">
-        {PARSER_KEYS.map(key => (
-          <div key={key} className="flex items-center gap-3">
-            <span className="w-24 text-right text-[11px] text-navy-700">{STYLE_LABELS[key] ?? key}</span>
-            <span className="text-app-muted">→</span>
-            <select
-              value={mapping[key] ?? key}
-              onChange={e => {
-                const next = { ...mapping }
-                if (e.target.value === key) delete next[key]; else next[key] = e.target.value
-                setStyleMapping(next)
-              }}
-              className={`${selectClass} flex-1`}
-            >
-              {styles.map(s => <option key={s.key} value={s.key}>{s.displayName}</option>)}
-            </select>
-            {mapping[key] && mapping[key] !== key && (
-              <>
-                <svg className="w-3.5 h-3.5 text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" />
-                </svg>
-                <button onClick={() => { const next = { ...mapping }; delete next[key]; setStyleMapping(next) }}
-                  className="text-xs text-gray-400 hover:text-gray-600">↩</button>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[13px] font-semibold text-navy-800">스타일 매핑</div>
+          <p className="text-[11px] text-app-muted mt-1">파서가 판단한 스타일을 다른 스타일로 변환합니다.</p>
+        </div>
+        <button onClick={handleAdd} disabled={availableKeys.length === 0}
+          className="text-[11px] px-2.5 py-1 rounded-md bg-navy-600 text-white hover:bg-navy-700 disabled:opacity-30 transition-colors">
+          + 추가
+        </button>
       </div>
 
-      <button onClick={() => setStyleMapping({})}
-        disabled={Object.keys(styleMapping).length === 0}
-        className="text-[11px] text-app-muted hover:text-navy-600 transition-colors disabled:opacity-40">
-        모든 매핑 초기화
-      </button>
+      {activeKeys.length === 0 ? (
+        <div className="bg-white rounded-lg border border-app-border p-6 text-center">
+          <p className="text-[11px] text-app-muted">설정된 매핑이 없습니다.</p>
+          <p className="text-[10px] text-app-muted mt-1">다른 양식의 스타일을 내 프리셋으로 변환할 때 사용합니다.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-app-border p-4 space-y-3">
+          {activeKeys.map(key => (
+            <div key={key} className="flex items-center gap-3">
+              <select value={key} onChange={e => {
+                const next = { ...mapping }
+                const val = next[key]
+                delete next[key]
+                next[e.target.value] = val
+                setStyleMapping(next)
+              }} className={`${selectClass} w-[120px]`}>
+                {PARSER_KEYS.map(k => <option key={k} value={k} disabled={k !== key && activeKeys.includes(k)}>{STYLE_LABELS[k] ?? k}</option>)}
+              </select>
+              <span className="text-app-muted">→</span>
+              <select value={mapping[key] ?? key} onChange={e => {
+                const next = { ...mapping }
+                next[key] = e.target.value
+                setStyleMapping(next)
+              }} className={`${selectClass} flex-1`}>
+                {styles.map(s => <option key={s.key} value={s.key}>{s.displayName}</option>)}
+              </select>
+              <button onClick={() => { const next = { ...mapping }; delete next[key]; setStyleMapping(next) }}
+                className="p-1 rounded hover:bg-red-50 transition-colors">
+                <svg className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeKeys.length > 0 && (
+        <button onClick={() => setStyleMapping({})}
+          className="text-[11px] text-app-muted hover:text-red-500 transition-colors">
+          모든 매핑 초기화
+        </button>
+      )}
     </div>
   )
 }
