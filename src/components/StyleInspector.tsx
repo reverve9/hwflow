@@ -100,19 +100,19 @@ export function StyleInspector() {
                   )}
                   {os?.space_before_hwpunit ? (
                     <>
-                      <Row label="단락 전 원본" value={hwpunitToMM(os.space_before_hwpunit)} />
-                      <Row label="단락 전 적용" value={hwpunitToMM(style.space_before_hwpunit)} highlight={os.space_before_hwpunit !== style.space_before_hwpunit} />
+                      <Row label="앞단락 원본" value={hwpunitToMM(os.space_before_hwpunit)} />
+                      <Row label="앞단락 적용" value={hwpunitToMM(style.space_before_hwpunit)} highlight={os.space_before_hwpunit !== style.space_before_hwpunit} />
                     </>
                   ) : (
-                    <Row label="단락 전" value={hwpunitToMM(style.space_before_hwpunit)} />
+                    <Row label="앞단락" value={hwpunitToMM(style.space_before_hwpunit)} />
                   )}
                   {os?.space_after_hwpunit ? (
                     <>
-                      <Row label="단락 후 원본" value={hwpunitToMM(os.space_after_hwpunit)} />
-                      <Row label="단락 후 적용" value={hwpunitToMM(style.space_after_hwpunit)} highlight={os.space_after_hwpunit !== style.space_after_hwpunit} />
+                      <Row label="뒷단락 원본" value={hwpunitToMM(os.space_after_hwpunit)} />
+                      <Row label="뒷단락 적용" value={hwpunitToMM(style.space_after_hwpunit)} highlight={os.space_after_hwpunit !== style.space_after_hwpunit} />
                     </>
                   ) : (
-                    <Row label="단락 후" value={hwpunitToMM(style.space_after_hwpunit)} />
+                    <Row label="뒷단락" value={hwpunitToMM(style.space_after_hwpunit)} />
                   )}
                 </Section>
               </>
@@ -151,7 +151,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center text-[12px]">
-      <span className="text-app-muted w-14 shrink-0">{label}</span>
+      <span className="text-app-muted w-20 shrink-0">{label}</span>
       <span className={`font-medium ${highlight ? 'text-orange-500' : 'text-navy-700'}`}>{value}</span>
     </div>
   )
