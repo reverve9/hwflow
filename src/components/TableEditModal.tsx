@@ -21,71 +21,49 @@ const BG_COLORS: (string | null)[] = [
 ]
 
 const PRESETS: BorderPreset[] = [
-  'all', 'outerThick', 'innerOnly', 'none',
-  'outerHorizontal', 'outerVertical', 'horizontalOnly', 'verticalOnly',
-  'topBottomH', 'leftRightV',
+  'all', 'outer', 'innerOnly', 'none',
+  'topOnly', 'bottomOnly', 'leftOnly', 'rightOnly',
+  'innerH', 'innerV',
 ]
 
-/** 테두리 프리셋 아이콘 SVG */
+/** 테두리 프리셋 아이콘 — 2×2 격자, 활성=실선 비활성=점선 */
 function BorderIcon({ preset }: { preset: BorderPreset }) {
-  const s = 36 // svg size
-  const p = 4  // padding
-  const m = s / 2 // midpoint
-  const on = 'stroke-blue-500'
-  const off = 'stroke-gray-300'
-  const onW = '1.5'
-  const offW = '0.8'
-  const dash = '2,2'
-
-  // 어떤 선이 활성인지
+  const s = 36, p = 4, m = s / 2
   const flags = getFlags(preset)
-  const t = flags.outerTop, b = flags.outerBottom, l = flags.outerLeft, r = flags.outerRight
-  const ih = flags.innerH, iv = flags.innerV
-  const thick = flags.outerThick
+  const { outerTop: t, outerBottom: b, outerLeft: l, outerRight: r, innerH: ih, innerV: iv } = flags
+
+  const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => (
+    <line x1={x1} y1={y1} x2={x2} y2={y2}
+      className={active ? 'stroke-blue-500' : 'stroke-gray-300'}
+      strokeWidth={active ? '1.5' : '0.8'}
+      strokeDasharray={active ? undefined : '2,2'} />
+  )
 
   return (
     <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} className="block">
-      {/* top */}
-      <line x1={p} y1={p} x2={s-p} y2={p}
-        className={t ? on : off} strokeWidth={t && thick ? '2.5' : t ? onW : offW}
-        strokeDasharray={t ? undefined : dash} />
-      {/* bottom */}
-      <line x1={p} y1={s-p} x2={s-p} y2={s-p}
-        className={b ? on : off} strokeWidth={b && thick ? '2.5' : b ? onW : offW}
-        strokeDasharray={b ? undefined : dash} />
-      {/* left */}
-      <line x1={p} y1={p} x2={p} y2={s-p}
-        className={l ? on : off} strokeWidth={l && thick ? '2.5' : l ? onW : offW}
-        strokeDasharray={l ? undefined : dash} />
-      {/* right */}
-      <line x1={s-p} y1={p} x2={s-p} y2={s-p}
-        className={r ? on : off} strokeWidth={r && thick ? '2.5' : r ? onW : offW}
-        strokeDasharray={r ? undefined : dash} />
-      {/* inner horizontal */}
-      <line x1={p} y1={m} x2={s-p} y2={m}
-        className={ih ? on : off} strokeWidth={ih ? onW : offW}
-        strokeDasharray={ih ? undefined : dash} />
-      {/* inner vertical */}
-      <line x1={m} y1={p} x2={m} y2={s-p}
-        className={iv ? on : off} strokeWidth={iv ? onW : offW}
-        strokeDasharray={iv ? undefined : dash} />
+      <Line x1={p} y1={p} x2={s-p} y2={p} active={t} />
+      <Line x1={p} y1={s-p} x2={s-p} y2={s-p} active={b} />
+      <Line x1={p} y1={p} x2={p} y2={s-p} active={l} />
+      <Line x1={s-p} y1={p} x2={s-p} y2={s-p} active={r} />
+      <Line x1={p} y1={m} x2={s-p} y2={m} active={ih} />
+      <Line x1={m} y1={p} x2={m} y2={s-p} active={iv} />
     </svg>
   )
 }
 
 function getFlags(p: BorderPreset) {
-  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false, outerThick: false }
+  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false }
   switch (p) {
     case 'all': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerH: true, innerV: true }
-    case 'outerThick': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerH: true, innerV: true, outerThick: true }
+    case 'outer': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true }
     case 'innerOnly': return { ...f, innerH: true, innerV: true }
     case 'none': return f
-    case 'outerHorizontal': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerH: true }
-    case 'outerVertical': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerV: true }
-    case 'horizontalOnly': return { ...f, innerH: true }
-    case 'verticalOnly': return { ...f, innerV: true }
-    case 'topBottomH': return { ...f, outerTop: true, outerBottom: true, innerH: true }
-    case 'leftRightV': return { ...f, outerLeft: true, outerRight: true, innerV: true }
+    case 'topOnly': return { ...f, outerTop: true }
+    case 'bottomOnly': return { ...f, outerBottom: true }
+    case 'leftOnly': return { ...f, outerLeft: true }
+    case 'rightOnly': return { ...f, outerRight: true }
+    case 'innerH': return { ...f, innerH: true }
+    case 'innerV': return { ...f, innerV: true }
   }
 }
 
@@ -315,7 +293,7 @@ export function TableEditModal({ block }: Props) {
   const applyPreset = (preset: BorderPreset) => {
     const f = getFlags(preset)
     const line: CellBorder = { type: lineType, width: lineWidth }
-    const outer: CellBorder = f.outerThick ? { type: lineType, width: '0.4 mm' } : line
+    const outer = line
 
     let rRange: [number, number], cRange: [number, number]
     if (selectedCells.size === 0) {

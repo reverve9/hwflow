@@ -99,9 +99,9 @@ export type InputMode = 'file' | 'paste'
 
 // 테두리 프리셋 enum
 export type BorderPreset =
-  | 'all' | 'outerThick' | 'innerOnly' | 'none'
-  | 'outerHorizontal' | 'outerVertical' | 'horizontalOnly' | 'verticalOnly'
-  | 'topBottomH' | 'leftRightV'
+  | 'all' | 'outer' | 'innerOnly' | 'none'
+  | 'topOnly' | 'bottomOnly' | 'leftOnly' | 'rightOnly'
+  | 'innerH' | 'innerV'
 
 // 기본값 팩토리
 export const DEFAULT_CELL_BORDER: CellBorder = { type: 'SOLID', width: '0.12 mm' }
