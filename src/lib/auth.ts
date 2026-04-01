@@ -10,7 +10,7 @@ export interface Profile {
   email: string
   display_name: string | null
   tenant_id: string | null
-  role: 'admin' | 'member'
+  role: 'super_admin' | 'admin' | 'member'
   approved: boolean
 }
 
@@ -48,15 +48,14 @@ export async function getUser(): Promise<User | null> {
 
 /** 프로필 조회 */
 export async function getProfile(): Promise<Profile | null> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase.auth.getSession()
-  if (!data.session) return null
-  const { data: profile } = await supabase
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', session.user.id)
     .single()
+  if (error) { console.error('[HWFlow] getProfile error:', error); return null }
   return profile
 }
 

@@ -131,7 +131,7 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-app-bg">
       <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)}
-        isAdmin={profile?.role === 'admin'} onOpenAdmin={() => setShowAdmin(true)} />
+        isAdmin={profile?.role === 'super_admin' || profile?.role === 'admin'} onOpenAdmin={() => setShowAdmin(true)} />
 
       {/* 임시저장 복원 배너 */}
       {draftBanner && (

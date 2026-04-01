@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getProfile } from '@/lib/auth'
+import type { Profile } from '@/lib/auth'
 import { Modal, ModalHeader, ModalSection } from './Modal'
 
 interface UserRow {
@@ -25,14 +27,19 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [tenants, setTenants] = useState<TenantRow[]>([])
   const [tab, setTab] = useState<'users' | 'tenants'>('users')
   const [message, setMessage] = useState('')
+  const [me, setMe] = useState<Profile | null>(null)
+
+  const isSuperAdmin = me?.role === 'super_admin'
 
   const loadData = async () => {
-    const [u, t] = await Promise.all([
+    const [u, t, p] = await Promise.all([
       supabase.rpc('admin_list_users'),
       supabase.rpc('admin_list_tenants'),
+      getProfile(),
     ])
     if (u.data) setUsers(u.data)
     if (t.data) setTenants(t.data)
+    setMe(p)
   }
 
   useEffect(() => { loadData() }, [])
@@ -101,7 +108,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               <ModalSection label={`승인 대기 (${pending.length})`}>
                 <div className="space-y-2">
                   {pending.map(u => (
-                    <UserCard key={u.id} user={u} tenants={tenants}
+                    <UserCard key={u.id} user={u} tenants={tenants} isSuperAdmin={isSuperAdmin}
                       onApprove={handleApprove} onRole={handleRole} onTenant={handleTenant} />
                   ))}
                 </div>
@@ -113,7 +120,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               <div className="space-y-2">
                 {approved.length === 0 && <p className="text-[11px] text-app-muted">없음</p>}
                 {approved.map(u => (
-                  <UserCard key={u.id} user={u} tenants={tenants}
+                  <UserCard key={u.id} user={u} tenants={tenants} isSuperAdmin={isSuperAdmin}
                     onApprove={handleApprove} onRole={handleRole} onTenant={handleTenant} />
                 ))}
               </div>
@@ -121,10 +128,12 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <button onClick={handleCreateTenant}
-              className="text-[12px] px-3 py-1.5 rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors">
-              + 기관 추가
-            </button>
+            {isSuperAdmin && (
+              <button onClick={handleCreateTenant}
+                className="text-[12px] px-3 py-1.5 rounded-md bg-navy-600 text-white hover:bg-navy-700 transition-colors">
+                + 기관 추가
+              </button>
+            )}
             <div className="space-y-2">
               {tenants.map(t => (
                 <div key={t.id} className="flex items-center justify-between bg-white rounded-lg border border-app-border p-3">
@@ -144,9 +153,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
-function UserCard({ user, tenants, onApprove, onRole, onTenant }: {
+function UserCard({ user, tenants, isSuperAdmin, onApprove, onRole, onTenant }: {
   user: UserRow
   tenants: TenantRow[]
+  isSuperAdmin: boolean
   onApprove: (id: string, v: boolean) => void
   onRole: (id: string, v: string) => void
   onTenant: (id: string, v: string | null) => void
@@ -161,24 +171,29 @@ function UserCard({ user, tenants, onApprove, onRole, onTenant }: {
         <p className="text-[10px] text-app-muted truncate">{user.email}</p>
       </div>
 
-      {/* 테넌트 */}
-      <select
-        value={user.tenant_id ?? ''}
-        onChange={e => onTenant(user.id, e.target.value || null)}
-        className="text-[11px] border border-app-border rounded px-1.5 py-1 bg-white min-w-[100px]"
-      >
-        <option value="">미배정</option>
-        {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
+      {/* 테넌트 — super_admin만 변경 가능 */}
+      {isSuperAdmin ? (
+        <select
+          value={user.tenant_id ?? ''}
+          onChange={e => onTenant(user.id, e.target.value || null)}
+          className="text-[11px] border border-app-border rounded px-1.5 py-1 bg-white min-w-[100px]"
+        >
+          <option value="">미배정</option>
+          {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+      ) : (
+        <span className="text-[11px] text-app-muted min-w-[100px]">{user.tenant_name ?? '미배정'}</span>
+      )}
 
       {/* 역할 */}
       <select
         value={user.role}
         onChange={e => onRole(user.id, e.target.value)}
-        className="text-[11px] border border-app-border rounded px-1.5 py-1 bg-white w-[80px]"
+        className="text-[11px] border border-app-border rounded px-1.5 py-1 bg-white w-[90px]"
       >
         <option value="member">멤버</option>
         <option value="admin">관리자</option>
+        {isSuperAdmin && <option value="super_admin">최고관리자</option>}
       </select>
 
       {/* 승인 */}
