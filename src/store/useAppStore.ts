@@ -10,8 +10,11 @@ import type { EditSnapshot } from './history'
 // 동적으로 스타일 프리셋 모듈 로드
 const styleModules = import.meta.glob('../styles/*.json', { eager: true }) as Record<string, { default: StylePreset }>
 
+const PRESET_PREFIX = 'hwflow_preset_'
+
 function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }> {
   const list: Array<{ id: string; name: string; data: StylePreset }> = []
+  const seen = new Set<string>()
   for (const [path, mod] of Object.entries(styleModules)) {
     const filename = path.split('/').pop()?.replace('.json', '') ?? ''
     const data = (mod as { default?: StylePreset }).default ?? (mod as unknown as StylePreset)
@@ -20,6 +23,18 @@ function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }
       name: data.meta?.name ?? filename,
       data,
     })
+    seen.add(filename)
+  }
+  // localStorage 커스텀 프리셋
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith(PRESET_PREFIX)) continue
+    const id = key.slice(PRESET_PREFIX.length)
+    if (seen.has(id)) continue
+    try {
+      const data = JSON.parse(localStorage.getItem(key)!) as StylePreset
+      list.push({ id, name: data.meta?.name ?? id, data })
+    } catch {}
   }
   return list
 }

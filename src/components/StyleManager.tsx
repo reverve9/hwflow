@@ -108,6 +108,37 @@ export function StyleManager() {
     setTimeout(() => setSaveMessage(''), 3000)
   }
 
+  const handleNewPreset = () => {
+    const name = prompt('새 프리셋 이름:')
+    if (!name?.trim()) return
+    const id = name.trim().replace(/\s+/g, '_')
+    // 현재 프리셋을 복제
+    const preset = getPresetData()
+    const data = preset
+      ? { ...preset, meta: { ...preset.meta, name: name.trim() } }
+      : { meta: { name: name.trim() }, page: { margin: { top_mm: 20, bottom_mm: 15, left_mm: 15, right_mm: 15 } }, paragraph_styles: {} }
+    localStorage.setItem(`hwflow_preset_${id}`, JSON.stringify(data))
+    reloadPresets()
+    setSelectedPreset(id)
+    setSaveMessage(`'${name.trim()}' 생성 완료`)
+    setTimeout(() => setSaveMessage(''), 2000)
+  }
+
+  const handleDeletePreset = () => {
+    const key = `hwflow_preset_${selectedPreset}`
+    if (!localStorage.getItem(key)) {
+      setSaveMessage('기본 프리셋은 삭제할 수 없습니다')
+      setTimeout(() => setSaveMessage(''), 2000)
+      return
+    }
+    if (!confirm(`'${availablePresets.find(p => p.id === selectedPreset)?.name ?? selectedPreset}' 프리셋을 삭제하시겠습니까?`)) return
+    localStorage.removeItem(key)
+    reloadPresets()
+    setSelectedPreset(availablePresets[0]?.id ?? '공문서_표준')
+    setSaveMessage('삭제 완료')
+    setTimeout(() => setSaveMessage(''), 2000)
+  }
+
   const handleExport = () => {
     const preset = getPresetData()
     if (!preset) return
@@ -159,6 +190,16 @@ export function StyleManager() {
             className={`${selectClass} w-auto`}>
             {availablePresets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <button onClick={handleNewPreset} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="새 프리셋">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+          <button onClick={handleDeletePreset} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="프리셋 삭제">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+            </svg>
+          </button>
           <div className="flex-1" />
           <button onClick={handleExport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">내보내기</button>
           <button onClick={handleImport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">가져오기</button>
