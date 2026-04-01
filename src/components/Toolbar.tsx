@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store/useAppStore'
 import type { InputMode } from '@/store/types'
-import { saveProjectFile, openProjectFile } from '@/lib/projectFile'
+import { saveProjectFile } from '@/lib/projectFile'
 
 export function Toolbar({ onOpenPreviewWindow, onOpenSettings, isAdmin, onOpenAdmin }: {
   onOpenPreviewWindow: () => void; onOpenSettings: () => void
@@ -70,16 +70,7 @@ export function Toolbar({ onOpenPreviewWindow, onOpenSettings, isAdmin, onOpenAd
 
       <div className="w-px h-5 bg-app-border" />
 
-      {/* 프로젝트 파일 저장/열기 */}
-      <button
-        onClick={() => openProjectFile()}
-        className="p-1.5 rounded-md text-app-muted hover:bg-navy-50 hover:text-navy-600 transition-colors"
-        title="프로젝트 열기 (.hwfl)"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
-        </svg>
-      </button>
+      {/* 프로젝트 저장 */}
       <button
         onClick={saveProjectFile}
         disabled={!hasBlocks}
