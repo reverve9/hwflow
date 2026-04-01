@@ -15,9 +15,18 @@ interface MergeInfo {
   merged: boolean // 다른 셀에 의해 가려진 셀
 }
 
+// 기본 색상 팔레트 (한글/오피스 기본 기준, 10열×5행)
 const BG_COLORS: (string | null)[] = [
-  null, '#D8D8D8', '#E8F5E9', '#FFF3E0', '#E3F2FD', '#FCE4EC',
-  '#F3E5F5', '#FFF9C4', '#ECEFF1', '#F5F5F5', '#FFFFFF',
+  null,      '#000000', '#1F497D', '#4F81BD', '#C0504D', '#9BBB59',
+  '#F79646', '#8064A2', '#4BACC6', '#E36C09',
+  '#FFFFFF', '#595959', '#C6D9F1', '#DBE5F1', '#F2DCDB', '#EBF1DE',
+  '#FDE9D9', '#E5E0EC', '#DBEEF4', '#FCD5B5',
+  '#F2F2F2', '#808080', '#8DB4E2', '#B9CDE5', '#E6B9B8', '#D7E4BD',
+  '#FBD5B5', '#CCC1DA', '#B7DEE8', '#FAC090',
+  '#D9D9D9', '#A6A6A6', '#548DD4', '#95B3D7', '#D99694', '#C2D69B',
+  '#FAC08F', '#B3A2C7', '#93CDDD', '#F9A15A',
+  '#BFBFBF', '#C0C0C0', '#17375E', '#376092', '#953735', '#76923C',
+  '#E46C0A', '#60497A', '#31859C', '#C76E16',
 ]
 
 const PRESETS: BorderPreset[] = [
@@ -539,26 +548,37 @@ export function TableEditModal({ block }: Props) {
 
             <hr className="border-app-border/50" />
 
-            {/* 배경 */}
+            {/* 배경색 */}
             <div>
               <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">배경</div>
               {primaryCell ? (
-                <div className="grid grid-cols-6 gap-1">
-                  {BG_COLORS.map((c, i) => {
-                    const isSel = primaryCell && cellBgColors[primaryCell.row]?.[primaryCell.col] === c
-                    return (
-                      <button key={i}
-                        onClick={() => forEachSelected((r, cc) => setCellBgColors(p => { const n = p.map(r => [...r]); n[r][cc] = c; return n }))}
-                        className={`w-6 h-6 rounded-md border transition-shadow ${isSel ? 'ring-2 ring-navy-400' : 'border-app-border hover:shadow-sm'}`}
-                        style={{ backgroundColor: c ?? '#fff' }}
-                      >
-                        {c === null && <span className="text-red-400 text-[10px]">∅</span>}
-                      </button>
-                    )
-                  })}
+                <div>
+                  <div className="grid grid-cols-10 gap-0.5">
+                    {BG_COLORS.map((c, i) => {
+                      const isSel = primaryCell && cellBgColors[primaryCell.row]?.[primaryCell.col] === c
+                      return (
+                        <button key={i}
+                          onClick={() => forEachSelected((r, cc) => setCellBgColors(p => { const n = p.map(r => [...r]); n[r][cc] = c; return n }))}
+                          className={`w-[18px] h-[18px] rounded-sm border transition-shadow ${isSel ? 'ring-1.5 ring-navy-400 ring-offset-1' : 'border-gray-200 hover:border-gray-400'}`}
+                          style={{ backgroundColor: c ?? '#fff' }}
+                          title={c ?? '색 없음'}
+                        >
+                          {c === null && <span className="text-red-400 text-[8px]">∅</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="color"
+                      value={cellBgColors[primaryCell.row]?.[primaryCell.col] ?? '#ffffff'}
+                      onChange={e => forEachSelected((r, cc) => setCellBgColors(p => { const n = p.map(r => [...r]); n[r][cc] = e.target.value; return n }))}
+                      className="w-5 h-5 rounded-sm border border-gray-200 cursor-pointer p-0"
+                    />
+                    <span className="text-[10px] text-app-muted">다른 색</span>
+                  </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-app-muted">셀을 선택하면 배경색 변경 가능</p>
+                <p className="text-[11px] text-app-muted">셀을 선택하세요</p>
               )}
             </div>
 
