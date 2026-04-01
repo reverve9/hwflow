@@ -61,6 +61,10 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
             rowspan: (item.rowspan as number) ?? 1,
             merged: (item.merged as boolean) ?? false,
             ...(item.widthPct ? { widthPct: item.widthPct as number } : {}),
+            ...(item.cellFont ? { cellFont: item.cellFont as string } : {}),
+            ...(item.cellSize ? { cellSize: item.cellSize as number } : {}),
+            ...(item.cellBold != null ? { cellBold: item.cellBold as boolean } : {}),
+            ...(item.cellLineHeight ? { cellLineHeight: item.cellLineHeight as number } : {}),
           }
         })
       )

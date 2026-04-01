@@ -93,7 +93,7 @@ function getFlags(p: BorderPreset) {
 }
 
 export function TableEditModal({ block }: Props) {
-  const { setShowBlockModal, setTableRowOverride, setTableHeaderOverride, effectiveTableRows, effectiveHasHeader } = useAppStore()
+  const { setShowBlockModal, setTableRowOverride, setTableHeaderOverride, effectiveTableRows, effectiveHasHeader, getPresetData } = useAppStore()
 
   const initRows = effectiveTableRows(block)
   const [cellTexts, setCellTexts] = useState(() => initRows.map(r => r.map(c => c.runs.map(r => r.text).join(''))))
@@ -109,6 +109,11 @@ export function TableEditModal({ block }: Props) {
       merged: c.merged ?? false,
     })))
   )
+  // 셀별 스타일 오버라이드
+  const [cellFonts, setCellFonts] = useState(() => initRows.map(r => r.map(c => c.cellFont ?? '')))
+  const [cellSizes, setCellSizes] = useState(() => initRows.map(r => r.map(c => c.cellSize ?? 0)))
+  const [cellFontBolds, setCellFontBolds] = useState(() => initRows.map(r => r.map(c => c.cellBold ?? false)))
+  const [cellLineHeights, setCellLineHeights] = useState(() => initRows.map(r => r.map(c => c.cellLineHeight ?? 0)))
   const [hasHeader, setHasHeader] = useState(() => effectiveHasHeader(block))
   const [lineType, setLineType] = useState<CellBorder['type']>('SOLID')
   const [lineWidth, setLineWidth] = useState('0.12 mm')
@@ -129,12 +134,17 @@ export function TableEditModal({ block }: Props) {
       const row: IRTableCell[] = []
       for (let c = 0; c < colCount; c++) {
         const m = cellMerge[r][c]
-        row.push({
+        const cell: IRTableCell = {
           runs: [{ text: cellTexts[r][c], bold: cellBolds[r][c] }],
           align: cellAligns[r][c], valign: cellValigns[r][c],
           bgColor: cellBgColors[r][c], borders: cellBorders[r][c],
           colspan: m.colspan, rowspan: m.rowspan, merged: m.merged,
-        })
+        }
+        if (cellFonts[r][c]) cell.cellFont = cellFonts[r][c]
+        if (cellSizes[r][c]) cell.cellSize = cellSizes[r][c]
+        if (cellFontBolds[r][c]) cell.cellBold = true
+        if (cellLineHeights[r][c]) cell.cellLineHeight = cellLineHeights[r][c]
+        row.push(cell)
       }
       rows.push(row)
     }
@@ -620,8 +630,86 @@ export function TableEditModal({ block }: Props) {
                 </div>
               </>
             )}
+
+            {/* 셀 스타일 */}
+            {primaryCell && primaryCell.row < rowCount && primaryCell.col < colCount && !cellMerge[primaryCell.row][primaryCell.col].merged && (
+              <>
+                <hr className="border-app-border/50" />
+                <CellStyleSection
+                  row={primaryCell.row} col={primaryCell.col}
+                  cellFonts={cellFonts} cellSizes={cellSizes}
+                  cellFontBolds={cellFontBolds} cellLineHeights={cellLineHeights}
+                  onUpdate={(field, value) => {
+                    forEachSelected((r, c) => {
+                      if (field === 'font') setCellFonts(p => { const n = p.map(r => [...r]); n[r][c] = value as string; return n })
+                      if (field === 'size') setCellSizes(p => { const n = p.map(r => [...r]); n[r][c] = value as number; return n })
+                      if (field === 'bold') setCellFontBolds(p => { const n = p.map(r => [...r]); n[r][c] = value as boolean; return n })
+                      if (field === 'lineHeight') setCellLineHeights(p => { const n = p.map(r => [...r]); n[r][c] = value as number; return n })
+                    })
+                  }}
+                  preset={getPresetData()}
+                  isHeader={hasHeader && primaryCell.row === 0}
+                />
+              </>
+            )}
           </div>
         </div>
     </Modal>
+  )
+}
+
+function CellStyleSection({ row, col, cellFonts, cellSizes, cellFontBolds, cellLineHeights, onUpdate, preset, isHeader }: {
+  row: number; col: number
+  cellFonts: string[][]; cellSizes: number[][]
+  cellFontBolds: boolean[][]; cellLineHeights: number[][]
+  onUpdate: (field: string, value: string | number | boolean) => void
+  preset: any; isHeader: boolean
+}) {
+  const baseStyle = isHeader ? preset?.paragraph_styles?.table_header : preset?.paragraph_styles?.table_body
+  const font = cellFonts[row][col] || baseStyle?.font || 'HCR Batang'
+  const size = cellSizes[row][col] || baseStyle?.size_pt || 10
+  const bold = cellFontBolds[row][col]
+  const lineHeight = cellLineHeights[row][col] || baseStyle?.line_height_percent || 160
+  const hasOverride = cellFonts[row][col] || cellSizes[row][col] || cellFontBolds[row][col] || cellLineHeights[row][col]
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider">셀 스타일</div>
+        {hasOverride && (
+          <button onClick={() => { onUpdate('font', ''); onUpdate('size', 0); onUpdate('bold', false); onUpdate('lineHeight', 0) }}
+            className="text-[9px] text-orange-500 hover:text-orange-600">초기화</button>
+        )}
+      </div>
+      <div className="space-y-2">
+        <div>
+          <div className="text-[10px] text-app-muted mb-1">폰트</div>
+          <select value={font} onChange={e => onUpdate('font', e.target.value)}
+            className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none">
+            <option value="HCR Batang">HCR Batang</option>
+            <option value="HCR Dotum">HCR Dotum</option>
+            <option value="맑은 고딕">맑은 고딕</option>
+            <option value="나눔고딕">나눔고딕</option>
+            <option value="나눔명조">나눔명조</option>
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <div className="text-[10px] text-app-muted mb-1">크기(pt)</div>
+            <input type="number" value={size} onChange={e => onUpdate('size', +e.target.value)}
+              className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] text-app-muted mb-1">줄간격(%)</div>
+            <input type="number" value={lineHeight} onChange={e => onUpdate('lineHeight', +e.target.value)}
+              className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none" />
+          </div>
+        </div>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={bold} onChange={e => onUpdate('bold', e.target.checked)} className="accent-navy-500" />
+          <span className="text-[11px] text-navy-700">셀 폰트 볼드</span>
+        </label>
+      </div>
+    </div>
   )
 }

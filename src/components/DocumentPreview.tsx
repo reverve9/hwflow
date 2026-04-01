@@ -222,10 +222,11 @@ export function DocumentPreview() {
                           ...(cell.widthPct ? { width: `${cell.widthPct}%` } : {}),
                         }}>
                         <div className="px-1 py-0.5" style={{
-                          fontSize: (style?.size_pt ?? 10) * PT_TO_PX,
-                          fontWeight: (cell.runs.some(r => r.bold) || style?.bold) ? 'bold' : 'normal',
+                          fontSize: (cell.cellSize || style?.size_pt || 10) * PT_TO_PX,
+                          fontWeight: (cell.cellBold || cell.runs.some(r => r.bold) || style?.bold) ? 'bold' : 'normal',
                           textAlign: cell.align,
-                          fontFamily: (style?.font ?? 'HCR Batang') + ', serif',
+                          fontFamily: (cell.cellFont || style?.font || 'HCR Batang') + ', serif',
+                          lineHeight: (cell.cellLineHeight || style?.line_height_percent || 160) / 100,
                         }}>
                           {cell.runs.map((r, i) => {
                             if (r.text === '\n') return <br key={i} />
