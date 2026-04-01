@@ -30,7 +30,12 @@ const PRESETS: BorderPreset[] = [
 function BorderIcon({ preset }: { preset: BorderPreset }) {
   const s = 36, p = 4, m = s / 2
   const flags = getFlags(preset)
-  const { outerTop: t, outerBottom: b, outerLeft: l, outerRight: r, innerH: ih, innerV: iv } = flags
+  const t = flags.outerTop || flags.allTop
+  const b = flags.outerBottom || flags.allBottom
+  const l = flags.outerLeft || flags.allLeft
+  const r = flags.outerRight || flags.allRight
+  const ih = flags.innerH || flags.allTop || flags.allBottom
+  const iv = flags.innerV || flags.allLeft || flags.allRight
 
   const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => (
     <line x1={x1} y1={y1} x2={x2} y2={y2}
@@ -52,16 +57,16 @@ function BorderIcon({ preset }: { preset: BorderPreset }) {
 }
 
 function getFlags(p: BorderPreset) {
-  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false }
+  const f = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false, allTop: false, allBottom: false, allLeft: false, allRight: false }
   switch (p) {
     case 'all': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true, innerH: true, innerV: true }
     case 'outer': return { ...f, outerTop: true, outerBottom: true, outerLeft: true, outerRight: true }
     case 'innerOnly': return { ...f, innerH: true, innerV: true }
     case 'none': return f
-    case 'topOnly': return { ...f, outerTop: true }
-    case 'bottomOnly': return { ...f, outerBottom: true }
-    case 'leftOnly': return { ...f, outerLeft: true }
-    case 'rightOnly': return { ...f, outerRight: true }
+    case 'topOnly': return { ...f, allTop: true }
+    case 'bottomOnly': return { ...f, allBottom: true }
+    case 'leftOnly': return { ...f, allLeft: true }
+    case 'rightOnly': return { ...f, allRight: true }
     case 'innerH': return { ...f, innerH: true }
     case 'innerV': return { ...f, innerV: true }
   }
@@ -306,14 +311,22 @@ export function TableEditModal({ block }: Props) {
 
     setCellBorders(prev => {
       const next = prev.map(r => r.map(c => ({ ...c })))
+      // 초기화
       for (let r = rRange[0]; r <= rRange[1]; r++)
         for (let c = cRange[0]; c <= cRange[1]; c++)
           next[r][c] = { top: { ...NONE_CELL_BORDER }, bottom: { ...NONE_CELL_BORDER }, left: { ...NONE_CELL_BORDER }, right: { ...NONE_CELL_BORDER } }
 
-      if (f.outerTop) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = { ...outer }
-      if (f.outerBottom) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[1]][c].bottom = { ...outer }
-      if (f.outerLeft) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = { ...outer }
-      if (f.outerRight) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[1]].right = { ...outer }
+      // 외곽선 (outer): 표 전체 가장자리에만
+      if (f.outerTop) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = { ...line }
+      if (f.outerBottom) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[1]][c].bottom = { ...line }
+      if (f.outerLeft) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = { ...line }
+      if (f.outerRight) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[1]].right = { ...line }
+      // 개별 방향 (all): 모든 셀의 해당 변
+      if (f.allTop) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].top = { ...line }
+      if (f.allBottom) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...line }
+      if (f.allLeft) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].left = { ...line }
+      if (f.allRight) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].right = { ...line }
+      // 내부선 (inner): 셀 사이에만
       if (f.innerH && rRange[1] > rRange[0])
         for (let r = rRange[0]; r < rRange[1]; r++)
           for (let c = cRange[0]; c <= cRange[1]; c++) { next[r][c].bottom = { ...line }; next[r + 1][c].top = { ...line } }
