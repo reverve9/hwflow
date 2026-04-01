@@ -222,15 +222,18 @@ function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps, docDefault
   const origBold = pprBold || (firstRun && firstRun.bold) || sp.bold || false;
   const origAlign = align || sp.align || null;
   const origLineHeight = lineHeight || sp.lineHeight || dd.lineHeight || 0;
+  const origSpaceBefore = spaceBefore || sp.spaceBefore || dd.spaceBefore || 0;
+  const origSpaceAfter = spaceAfter || sp.spaceAfter || dd.spaceAfter || 0;
+  const origIndentLeft = indentLeft || sp.indentLeft || 0;
 
   // 런에서 내부 필드 제거
   for (const r of runs) { delete r._font; delete r._size; }
 
   const result = { type: irType, runs: runs.length > 0 ? runs : [{ text: '', bold: false }] };
   if (origAlign) result.align = origAlign;
-  if (indentLeft) result.indent_left_hwpunit = indentLeft;
-  if (spaceBefore) result.space_before_hwpunit = spaceBefore;
-  if (spaceAfter) result.space_after_hwpunit = spaceAfter;
+  if (origIndentLeft) result.indent_left_hwpunit = origIndentLeft;
+  if (origSpaceBefore) result.space_before_hwpunit = origSpaceBefore;
+  if (origSpaceAfter) result.space_after_hwpunit = origSpaceAfter;
 
   // 원본 스타일
   const os = {};
@@ -239,9 +242,9 @@ function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps, docDefault
   os.bold = origBold;
   if (origAlign) os.align = origAlign;
   if (origLineHeight) os.line_height_percent = origLineHeight;
-  if (indentLeft) os.indent_left_hwpunit = indentLeft;
-  if (spaceBefore) os.space_before_hwpunit = spaceBefore;
-  if (spaceAfter) os.space_after_hwpunit = spaceAfter;
+  if (origIndentLeft) os.indent_left_hwpunit = origIndentLeft;
+  if (origSpaceBefore) os.space_before_hwpunit = origSpaceBefore;
+  if (origSpaceAfter) os.space_after_hwpunit = origSpaceAfter;
   if (origFont || origSize) result.originalStyle = os;
 
   return result;
@@ -321,14 +324,38 @@ function _parseTableOrdered(tblNode, styleIdToName) {
   const tblChildren = tblNode['w:tbl'] || [];
   const rows = [];
 
+  // tblGrid에서 열 너비 추출 (dxa 단위)
+  const colWidths = [];
+  const gridNode = _findOrdered(tblChildren, 'w:tblGrid');
+  if (gridNode) {
+    for (const gc of (gridNode['w:tblGrid'] || [])) {
+      if (gc['w:gridCol'] !== undefined) {
+        const w = parseInt((gc[':@'] || {})['@_w:w'] || '0', 10);
+        colWidths.push(w);
+      }
+    }
+  }
+  const totalGridWidth = colWidths.reduce((a, b) => a + b, 0);
+
   for (const child of tblChildren) {
     if (child['w:tr'] !== undefined) {
       const trChildren = child['w:tr'] || [];
       const cells = [];
+      let gridIdx = 0;
 
       for (const tcNode of trChildren) {
         if (tcNode['w:tc'] !== undefined) {
           const cell = _parseCellOrdered(tcNode, styleIdToName);
+          // dxa 기반 너비 계산 (pct가 없을 때)
+          if (!cell.widthPct && totalGridWidth > 0 && gridIdx < colWidths.length) {
+            const span = cell.colspan || 1;
+            let cellW = 0;
+            for (let s = 0; s < span && gridIdx + s < colWidths.length; s++) {
+              cellW += colWidths[gridIdx + s];
+            }
+            cell.widthPct = Math.round(cellW / totalGridWidth * 1000) / 10;
+          }
+          gridIdx += cell.colspan || 1;
           cells.push(cell);
         }
       }
@@ -353,9 +380,30 @@ function _parseTableOrdered(tblNode, styleIdToName) {
 function _parseCellOrdered(tcNode, styleIdToName) {
   const tcChildren = tcNode['w:tc'] || [];
   const runs = [];
+  let widthPct = 0;
+  let gridSpan = 1;
 
   for (const child of tcChildren) {
-    if (child['w:p'] !== undefined) {
+    if (child['w:tcPr'] !== undefined) {
+      const tcPrChildren = child['w:tcPr'] || [];
+      // 셀 너비 (w:tcW)
+      const tcW = _findOrdered(tcPrChildren, 'w:tcW');
+      if (tcW) {
+        const attrs = tcW[':@'] || {};
+        const type = attrs['@_w:type'] || '';
+        const w = parseInt(attrs['@_w:w'] || '0', 10);
+        if (type === 'pct' && w > 0) {
+          widthPct = Math.round(w / 50) // Word pct는 1/50% 단위
+        } else if (type === 'dxa' && w > 0) {
+          widthPct = 0; // dxa는 절대값, 나중에 tblW 대비 계산
+        }
+      }
+      // gridSpan (셀 병합)
+      const gsNode = _findOrdered(tcPrChildren, 'w:gridSpan');
+      if (gsNode) {
+        gridSpan = parseInt((gsNode[':@'] || {})['@_w:val'] || '1', 10);
+      }
+    } else if (child['w:p'] !== undefined) {
       if (runs.length > 0) {
         runs.push({ text: '\n', bold: false });
       }
@@ -373,7 +421,10 @@ function _parseCellOrdered(tcNode, styleIdToName) {
     runs.push({ text: '', bold: false });
   }
 
-  return { runs };
+  const cell = { runs };
+  if (widthPct > 0) cell.widthPct = widthPct;
+  if (gridSpan > 1) cell.colspan = gridSpan;
+  return cell;
 }
 
 
@@ -443,6 +494,10 @@ function _buildStyleIdMap(stylesXml, nameMap, propsMap, docDefaults, themeFonts)
         const line = parseInt(sp['@_w:line'] || '0', 10);
         const lineRule = sp['@_w:lineRule'] || 'auto';
         if (line && lineRule === 'auto') docDefaults.lineHeight = Math.round(line / 240 * 100);
+        const before = parseInt(sp['@_w:before'] || '0', 10);
+        const after = parseInt(sp['@_w:after'] || '0', 10);
+        if (before) docDefaults.spaceBefore = before * 5;
+        if (after) docDefaults.spaceAfter = after * 5;
       }
     }
   }
@@ -477,11 +532,21 @@ function _buildStyleIdMap(stylesXml, nameMap, propsMap, docDefaults, themeFonts)
         const line = parseInt(sp['@_w:line'] || '0', 10);
         const lineRule = sp['@_w:lineRule'] || 'auto';
         if (line && lineRule === 'auto') props.lineHeight = Math.round(line / 240 * 100);
+        const before = parseInt(sp['@_w:before'] || '0', 10);
+        const after = parseInt(sp['@_w:after'] || '0', 10);
+        if (before) props.spaceBefore = before * 5;
+        if (after) props.spaceAfter = after * 5;
+      }
+      const ind = pPr['w:ind'];
+      if (ind) {
+        const left = parseInt(ind['@_w:left'] || '0', 10);
+        if (left) props.indentLeft = left * 5;
       }
     }
-    // font 없으면 docDefaults에서 가져오기
+    // font/size/spacing 없으면 docDefaults에서 가져오기
     if (!props.font && docDefaults.font) props.font = docDefaults.font;
     if (!props.size && docDefaults.size) props.size = docDefaults.size;
+    if (!props.lineHeight && docDefaults.lineHeight) props.lineHeight = docDefaults.lineHeight;
     if (id && Object.keys(props).length > 0) propsMap[id] = props;
   }
 }
