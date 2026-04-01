@@ -270,9 +270,14 @@ function classifyBlocks(lines: LineGroup[]) {
     const type = getType(line.fontSize, trimmed)
     const isHeading = type !== 'body'
     const lineGap = prevY > 0 ? Math.abs(prevY - line.y) : 0
-    const bigGap = lineGap > line.fontSize * 2 // 줄간격의 2배 이상 → 단락 분리
+    const bigGap = lineGap > line.fontSize * 2
 
-    // 헤딩은 항상 새 블록
+    // 큰 줄간격 → 빈 블록 삽입 (여백 표현)
+    if (bigGap && prevY > 0) {
+      currentBlock = null
+      blocks.push({ type: 'body', runs: [{ text: '', bold: false }] })
+    }
+
     if (isHeading || !currentBlock || currentBlock.type !== type || bigGap) {
       currentBlock = {
         type,
@@ -367,6 +372,12 @@ function classifyBlocksWithImages(elements: PageElement[]) {
     const isHeading = type !== 'body'
     const lineGap = prevY > 0 ? Math.abs(prevY - line.y) : 0
     const bigGap = lineGap > line.fontSize * 2
+
+    // 큰 줄간격 → 빈 블록 삽입 (여백 표현)
+    if (bigGap && prevY > 0) {
+      currentBlock = null
+      blocks.push({ type: 'body', runs: [{ text: '', bold: false }] })
+    }
 
     if (isHeading || !currentBlock || currentBlock.type !== type || bigGap) {
       currentBlock = { type, runs: [{ text: trimmed, bold: line.bold || isHeading }] }
