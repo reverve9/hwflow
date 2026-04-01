@@ -15,7 +15,7 @@ export interface FontItem {
 
 // ─── 기본 폰트 (queryLocalFonts 미지원 시 fallback) ──────
 const FALLBACK_FONTS = [
-  '함초롬바탕', '함초롬돋움', '맑은 고딕', '굴림체', '바탕체', '문체부 바탕체',
+  'HCR Batang', 'HCR Dotum', '맑은 고딕', '굴림체', '바탕체', '문체부 바탕체',
 ]
 
 // ─── 한글 판별 ────────────────────────────────────────────

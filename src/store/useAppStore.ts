@@ -298,7 +298,7 @@ export const useAppStore = create<AppState>((set, get) => {
       const preset = get().getPresetData()
       if (preset?.paragraph_styles[type]) return preset.paragraph_styles[type]
       return {
-        font: '함초롬바탕', size_pt: 10, bold: false, align: 'justify',
+        font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify',
         indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0,
         line_height_percent: 160,
       }

@@ -39,7 +39,7 @@
     "body" : {
       "align" : "justify",
       "bold" : false,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 1500,
       "line_height_percent" : 160,
       "size_pt" : 10,
@@ -49,7 +49,7 @@
     "heading1" : {
       "align" : "left",
       "bold" : true,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 1000,
       "line_height_percent" : 160,
       "size_pt" : 15,
@@ -59,7 +59,7 @@
     "heading2" : {
       "align" : "left",
       "bold" : true,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 1500,
       "line_height_percent" : 160,
       "size_pt" : 13,
@@ -69,7 +69,7 @@
     "heading3" : {
       "align" : "left",
       "bold" : true,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 2000,
       "line_height_percent" : 160,
       "size_pt" : 12,
@@ -79,7 +79,7 @@
     "heading4" : {
       "align" : "left",
       "bold" : false,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 3000,
       "line_height_percent" : 160,
       "size_pt" : 11,
@@ -89,7 +89,7 @@
     "table_body" : {
       "align" : "left",
       "bold" : false,
-      "font" : "함초롬바탕",
+      "font" : "HCR Batang",
       "indent_left_hwpunit" : 0,
       "line_height_percent" : 150,
       "size_pt" : 10,
@@ -99,7 +99,7 @@
     "table_header" : {
       "align" : "center",
       "bold" : true,
-      "font" : "함초롬돋움",
+      "font" : "HCR Dotum",
       "indent_left_hwpunit" : 0,
       "line_height_percent" : 150,
       "size_pt" : 10,

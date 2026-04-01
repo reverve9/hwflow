@@ -8,6 +8,15 @@
 import { zipSync } from 'fflate';
 import { mmToHwpunit, ptToHeight, randomId, escapeXml, encodeUTF8 } from './utils.js';
 
+// 브라우저 폰트명 → HWPX 내부 폰트명 변환
+const FONT_NAME_MAP = {
+  'HCR Batang': '함초롬바탕',
+  'HCR Dotum': '함초롬돋움',
+};
+function hwpxFontName(name) {
+  return FONT_NAME_MAP[name] || name;
+}
+
 // ─── 네임스페이스 ──────────────────────────────────────────
 const NAMESPACES = {
   ha: 'http://www.hancom.co.kr/hwpml/2011/app',
@@ -49,7 +58,7 @@ export class HwpxWriter {
     const fonts = new Set();
     const ps = this.style.paragraph_styles || {};
     for (const sty of Object.values(ps)) {
-      if (sty.font) fonts.add(sty.font);
+      if (sty.font) fonts.add(hwpxFontName(sty.font));
     }
     if (fonts.size === 0) fonts.add('함초롬바탕');
     return [...fonts].sort();
@@ -86,7 +95,7 @@ export class HwpxWriter {
         id: cprId,
         height: ptToHeight(sty.size_pt || 10),
         bold: sty.bold || false,
-        font_id: this._fontId(sty.font || '함초롬바탕'),
+        font_id: this._fontId(hwpxFontName(sty.font || 'HCR Batang')),
         color: sty.color || '#000000',
         border_fill_id: 2,
       });
@@ -100,7 +109,7 @@ export class HwpxWriter {
       id: empId,
       height: ptToHeight(bodySty.size_pt || 10),
       bold: true,
-      font_id: this._fontId(bodySty.font || '함초롬바탕'),
+      font_id: this._fontId(hwpxFontName(bodySty.font || 'HCR Batang')),
       color: '#000000',
       border_fill_id: 2,
     });

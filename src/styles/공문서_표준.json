@@ -26,7 +26,7 @@
   "paragraph_styles": {
     "heading1": {
       "numbering": "I, II, III",
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 15,
       "bold": true,
       "align": "left",
@@ -37,7 +37,7 @@
     },
     "heading2": {
       "numbering": "1, 2, 3",
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 13,
       "bold": true,
       "align": "left",
@@ -48,7 +48,7 @@
     },
     "heading3": {
       "numbering": "가, 나, 다",
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 12,
       "bold": true,
       "align": "left",
@@ -59,7 +59,7 @@
     },
     "heading4": {
       "numbering": "1), 2), 3)",
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 11,
       "bold": false,
       "align": "left",
@@ -69,7 +69,7 @@
       "line_height_percent": 160
     },
     "body": {
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 10,
       "bold": false,
       "align": "justify",
@@ -79,14 +79,14 @@
       "line_height_percent": 160
     },
     "table_header": {
-      "font": "함초롬돋움",
+      "font": "HCR Dotum",
       "size_pt": 10,
       "bold": true,
       "align": "center",
       "line_height_percent": 150
     },
     "table_body": {
-      "font": "함초롬바탕",
+      "font": "HCR Batang",
       "size_pt": 10,
       "bold": false,
       "align": "left",

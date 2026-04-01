@@ -27,7 +27,7 @@ export function DocumentPreview() {
   const resolveStyle = (block: IRBlock, eType: string): ParagraphStyleData => {
     if (blockOverrides[block.id]) return blockOverrides[block.id].style
     const base = preset?.paragraph_styles[eType] ?? {
-      font: '함초롬바탕', size_pt: 10, bold: false, align: 'justify',
+      font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify',
       indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0,
       line_height_percent: 160,
     }
@@ -187,7 +187,7 @@ export function DocumentPreview() {
                           fontSize: (style?.size_pt ?? 10) * PT_TO_PX,
                           fontWeight: (cell.runs.some(r => r.bold) || style?.bold) ? 'bold' : 'normal',
                           textAlign: cell.align,
-                          fontFamily: (style?.font ?? '함초롬바탕') + ', serif',
+                          fontFamily: (style?.font ?? 'HCR Batang') + ', serif',
                         }}>
                           {cell.runs.map((r, i) => {
                             if (r.text === '\n') return <br key={i} />

@@ -121,7 +121,7 @@ export const SOLID_BORDERS: CellBorders = {
 }
 
 export const DEFAULT_PARAGRAPH_STYLE: ParagraphStyleData = {
-  font: '함초롬바탕',
+  font: 'HCR Batang',
   size_pt: 10,
   bold: false,
   align: 'justify',

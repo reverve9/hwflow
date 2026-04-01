@@ -77,7 +77,7 @@ export function StyleManager() {
     const key = name.toLowerCase().replace(/\s+/g, '_')
     const newStyle: EditableStyle = {
       id: key, key, displayName: name,
-      data: base ? { ...base } : { font: '함초롬바탕', size_pt: 10, bold: false, align: 'justify', indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0, line_height_percent: 160 },
+      data: base ? { ...base } : { font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify', indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0, line_height_percent: 160 },
       isBuiltin: false,
     }
     setStyles(prev => [...prev, newStyle])
@@ -116,18 +116,30 @@ export function StyleManager() {
   }
 
   const handleNewPreset = () => {
-    const name = prompt('새 프리셋 이름:')
+    const preset = getPresetData()
+    const baseName = preset?.meta?.name ?? selectedPreset
+    const name = prompt('새 프리셋 이름:', `${baseName} 복사본`)
     if (!name?.trim()) return
     const id = name.trim().replace(/\s+/g, '_')
-    // 현재 프리셋을 복제
-    const preset = getPresetData()
-    const data = preset
-      ? { ...preset, meta: { ...preset.meta, name: name.trim() } }
-      : { meta: { name: name.trim() }, page: { margin: { top_mm: 20, bottom_mm: 15, left_mm: 15, right_mm: 15 } }, paragraph_styles: {} }
+    // 현재 편집 중인 스타일로 복제
+    const paragraphStyles: Record<string, ParagraphStyleData & { display_name?: string }> = {}
+    for (const s of styles) {
+      paragraphStyles[s.key] = { ...s.data }
+      if (s.displayName !== (STYLE_LABELS[s.key] ?? s.key) || !s.isBuiltin) {
+        paragraphStyles[s.key].display_name = s.displayName
+      }
+    }
+    const data = {
+      ...(preset ?? {}),
+      meta: { ...(preset?.meta ?? {}), name: name.trim() },
+      page: { ...(preset?.page ?? {}), margin: { top_mm: pageMargin.top, bottom_mm: pageMargin.bottom, left_mm: pageMargin.left, right_mm: pageMargin.right } },
+      paragraph_styles: paragraphStyles,
+      style_mapping: styleMapping,
+    }
     localStorage.setItem(`hwflow_preset_${id}`, JSON.stringify(data))
     reloadPresets()
     setSelectedPreset(id)
-    setSaveMessage(`'${name.trim()}' 생성 완료`)
+    setSaveMessage(`'${name.trim()}' 복제 완료`)
     setTimeout(() => setSaveMessage(''), 2000)
   }
 
