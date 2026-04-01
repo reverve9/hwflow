@@ -433,16 +433,17 @@ export function TableEditModal({ block }: Props) {
                             )}
 
                             {isEditing ? (
-                              <input
+                              <textarea
                                 autoFocus
                                 value={cellTexts[r][c]}
                                 onChange={e => setCellTexts(p => { const n = p.map(r => [...r]); n[r][c] = e.target.value; return n })}
-                                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingCell(null) }}
-                                className={`w-full px-1.5 py-1 text-[11px] outline-none bg-transparent ${bold ? 'font-bold' : ''}`}
+                                onKeyDown={e => { if (e.key === 'Escape') setEditingCell(null) }}
+                                rows={Math.max(cellTexts[r][c].split('\n').length, 2)}
+                                className={`w-full px-1.5 py-1 text-[11px] outline-none bg-transparent resize-none ${bold ? 'font-bold' : ''}`}
                                 style={{ textAlign: cellAligns[r][c] }}
                               />
                             ) : (
-                              <div className={`px-1.5 py-1 text-[11px] min-h-[28px] ${bold ? 'font-bold' : ''}`}
+                              <div className={`px-1.5 py-1 text-[11px] min-h-[28px] whitespace-pre-wrap ${bold ? 'font-bold' : ''}`}
                                 style={{ textAlign: cellAligns[r][c] }}>
                                 {cellTexts[r][c] || '\u00A0'}
                               </div>
