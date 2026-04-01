@@ -23,8 +23,15 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
-  // Supabase 인증 상태 구독
+  // Supabase 인증 상태
   useEffect(() => {
+    // 초기 세션 체크
+    getProfile().then(p => {
+      setProfile(p)
+      setAuthed(!!p?.approved)
+      setAuthLoading(false)
+    })
+    // 이후 변경 구독
     const sub = onAuthChange(async (user) => {
       if (user) {
         const p = await getProfile()
