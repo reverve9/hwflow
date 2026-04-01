@@ -300,14 +300,10 @@ export function TableEditModal({ block }: Props) {
     const line: CellBorder = { type: lineType, width: lineWidth }
     const outer = line
 
-    let rRange: [number, number], cRange: [number, number]
-    if (selectedCells.size === 0) {
-      rRange = [0, rowCount - 1]; cRange = [0, colCount - 1]
-    } else {
-      const cells = [...selectedCells].map(k => k.split(',').map(Number))
-      rRange = [Math.min(...cells.map(c => c[0])), Math.max(...cells.map(c => c[0]))]
-      cRange = [Math.min(...cells.map(c => c[1])), Math.max(...cells.map(c => c[1]))]
-    }
+    if (selectedCells.size === 0) return
+    const cells = [...selectedCells].map(k => k.split(',').map(Number))
+    const rRange: [number, number] = [Math.min(...cells.map(c => c[0])), Math.max(...cells.map(c => c[0]))]
+    const cRange: [number, number] = [Math.min(...cells.map(c => c[1])), Math.max(...cells.map(c => c[1]))]
 
     setCellBorders(prev => {
       const next = prev.map(r => r.map(c => ({ ...c })))
@@ -483,7 +479,10 @@ export function TableEditModal({ block }: Props) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider">테두리</div>
-                <span className="text-[10px] text-app-muted">{selectedCells.size > 0 ? '선택 영역' : '표 전체'}</span>
+                {selectedCells.size > 0
+                  ? <span className="text-[10px] text-app-muted">선택 영역</span>
+                  : <span className="text-[10px] text-orange-400">셀을 선택하세요</span>
+                }
               </div>
               <div className="grid grid-cols-5 gap-1">
                 {PRESETS.map(p => (
