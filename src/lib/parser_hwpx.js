@@ -236,13 +236,33 @@ function _parseSection(xml, header) {
 
   const blocks = [];
   const secChildren = sec['sec'] || [];
+  _walkChildren(secChildren, blocks, header);
+  return blocks;
+}
 
-  // 디버그: 섹션 자식 태그 목록
-  const tagNames = secChildren.map(c => Object.keys(c).filter(k => k !== ':@').join(','));
-  console.log('[HWPX] section children tags:', tagNames.join(' | '));
-
-  for (const child of secChildren) {
+/**
+ * 자식 노드를 순회하며 단락과 표를 추출.
+ * hp:tbl이 sec 직접 자식일 수도 있고, p > run 안에 있을 수도 있음.
+ */
+function _walkChildren(children, blocks, header) {
+  for (const child of children) {
     if (child['p'] !== undefined) {
+      // p 안에 tbl이 있을 수 있으므로 먼저 확인
+      const pChildren = child['p'] || [];
+      let hasTbl = false;
+      for (const pc of pChildren) {
+        if (pc['run'] !== undefined) {
+          const runChildren = pc['run'] || [];
+          for (const rc of runChildren) {
+            if (rc['tbl'] !== undefined) {
+              hasTbl = true;
+              const block = _parseTable(rc, header);
+              if (block) blocks.push(block);
+            }
+          }
+        }
+      }
+      // 표가 없는 단락이거나, 표와 텍스트가 함께 있는 경우 텍스트도 추출
       const block = _parseParagraph(child, header);
       if (block) blocks.push(block);
     } else if (child['tbl'] !== undefined) {
@@ -250,9 +270,6 @@ function _parseSection(xml, header) {
       if (block) blocks.push(block);
     }
   }
-
-  console.log('[HWPX] parsed blocks:', blocks.length, 'tables:', blocks.filter(b => b.type === 'table').length);
-  return blocks;
 }
 
 // ─── 단락 파싱 ──────────────────────────────────────────
