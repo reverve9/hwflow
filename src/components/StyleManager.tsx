@@ -320,16 +320,16 @@ function StyleEditForm({ style, onUpdate, onRename, onKeyChange }: {
             <input type="number" value={style.data.line_height_percent} onChange={e => onUpdate({ line_height_percent: +e.target.value })} className={inputClass} />
           </div>
           <div>
-            <FieldLabel>들여쓰기</FieldLabel>
-            <input type="number" value={style.data.indent_left_hwpunit} onChange={e => onUpdate({ indent_left_hwpunit: +e.target.value })} className={inputClass} />
+            <FieldLabel>들여쓰기(pt)</FieldLabel>
+            <input type="number" value={Math.round(style.data.indent_left_hwpunit / 100)} onChange={e => onUpdate({ indent_left_hwpunit: +e.target.value * 100 })} className={inputClass} />
           </div>
           <div>
-            <FieldLabel>단락 전</FieldLabel>
-            <input type="number" value={style.data.space_before_hwpunit} onChange={e => onUpdate({ space_before_hwpunit: +e.target.value })} className={inputClass} />
+            <FieldLabel>단락 전(pt)</FieldLabel>
+            <input type="number" value={Math.round(style.data.space_before_hwpunit / 100)} onChange={e => onUpdate({ space_before_hwpunit: +e.target.value * 100 })} className={inputClass} />
           </div>
           <div>
-            <FieldLabel>단락 후</FieldLabel>
-            <input type="number" value={style.data.space_after_hwpunit} onChange={e => onUpdate({ space_after_hwpunit: +e.target.value })} className={inputClass} />
+            <FieldLabel>단락 후(pt)</FieldLabel>
+            <input type="number" value={Math.round(style.data.space_after_hwpunit / 100)} onChange={e => onUpdate({ space_after_hwpunit: +e.target.value * 100 })} className={inputClass} />
           </div>
         </div>
       </ModalSection>

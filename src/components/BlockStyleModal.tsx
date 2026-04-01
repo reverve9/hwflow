@@ -149,19 +149,19 @@ export function BlockStyleModal({ block }: Props) {
                         onChange={e => updateStyle({ line_height_percent: +e.target.value })}
                         className="w-full bg-[#f5f5f5] border border-app-border rounded-md px-2 py-1.5 text-[11px] text-navy-800 outline-none" />
                     </FieldGroup>
-                    <FieldGroup label="들여쓰기">
-                      <input type="number" value={overrideStyle.indent_left_hwpunit}
-                        onChange={e => updateStyle({ indent_left_hwpunit: +e.target.value })}
+                    <FieldGroup label="들여쓰기(pt)">
+                      <input type="number" value={Math.round(overrideStyle.indent_left_hwpunit / 100)}
+                        onChange={e => updateStyle({ indent_left_hwpunit: +e.target.value * 100 })}
                         className="w-full bg-[#f5f5f5] border border-app-border rounded-md px-2 py-1.5 text-[11px] text-navy-800 outline-none" />
                     </FieldGroup>
-                    <FieldGroup label="단락 전">
-                      <input type="number" value={overrideStyle.space_before_hwpunit}
-                        onChange={e => updateStyle({ space_before_hwpunit: +e.target.value })}
+                    <FieldGroup label="단락 전(pt)">
+                      <input type="number" value={Math.round(overrideStyle.space_before_hwpunit / 100)}
+                        onChange={e => updateStyle({ space_before_hwpunit: +e.target.value * 100 })}
                         className="w-full bg-[#f5f5f5] border border-app-border rounded-md px-2 py-1.5 text-[11px] text-navy-800 outline-none" />
                     </FieldGroup>
-                    <FieldGroup label="단락 후">
-                      <input type="number" value={overrideStyle.space_after_hwpunit}
-                        onChange={e => updateStyle({ space_after_hwpunit: +e.target.value })}
+                    <FieldGroup label="단락 후(pt)">
+                      <input type="number" value={Math.round(overrideStyle.space_after_hwpunit / 100)}
+                        onChange={e => updateStyle({ space_after_hwpunit: +e.target.value * 100 })}
                         className="w-full bg-[#f5f5f5] border border-app-border rounded-md px-2 py-1.5 text-[11px] text-navy-800 outline-none" />
                     </FieldGroup>
                   </div>
