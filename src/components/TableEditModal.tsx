@@ -597,12 +597,6 @@ export function TableEditModal({ block }: Props) {
                 <hr className="border-app-border/50" />
                 <div>
                   <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">셀 속성</div>
-                  <label className="flex items-center gap-1.5 mb-2.5 cursor-pointer">
-                    <input type="checkbox" checked={cellBolds[primaryCell.row][primaryCell.col]}
-                      onChange={e => forEachSelected((r, c) => setCellBolds(p => { const n = p.map(r => [...r]); n[r][c] = e.target.checked; return n }))}
-                      className="accent-navy-500" />
-                    <span className="text-[11px] text-navy-700">볼드</span>
-                  </label>
                   <div className="mb-2.5">
                     <div className="text-[10px] text-app-muted mb-1">가로 정렬</div>
                     <div className="flex border border-app-border rounded-md overflow-hidden">
