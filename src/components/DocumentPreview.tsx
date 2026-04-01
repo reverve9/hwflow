@@ -94,6 +94,7 @@ export function DocumentPreview() {
   const borderLW = (b: { width: string }) => {
     switch (b.width) { case '0.7 mm': return 2; case '0.4 mm': return 1.5; case '0.25 mm': return 1; default: return 0.5 }
   }
+  const cssBdr = (b: { type: string; width: string }) => b.type === 'NONE' ? '0' : `${borderLW(b)}px solid black`
 
   const renderParagraph = (block: IRBlock, eType: string) => {
     const style = resolveStyle(block, eType)
@@ -173,13 +174,15 @@ export function DocumentPreview() {
                     const rs = cell.rowspan ?? 1
                     const bg = cell.bgColor ?? (isHeader ? tableHeadColor : undefined)
                     return (
-                      <td key={cIdx} className="relative p-0"
+                      <td key={cIdx} className="p-0"
                         colSpan={cs > 1 ? cs : undefined} rowSpan={rs > 1 ? rs : undefined}
-                        style={{ backgroundColor: bg }}>
-                        {cell.borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: borderLW(cell.borders.top) }} />}
-                        {cell.borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black" style={{ height: borderLW(cell.borders.bottom) }} />}
-                        {cell.borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: borderLW(cell.borders.left) }} />}
-                        {cell.borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black" style={{ width: borderLW(cell.borders.right) }} />}
+                        style={{
+                          backgroundColor: bg,
+                          borderTop: cssBdr(cell.borders.top),
+                          borderBottom: cssBdr(cell.borders.bottom),
+                          borderLeft: cssBdr(cell.borders.left),
+                          borderRight: cssBdr(cell.borders.right),
+                        }}>
                         <div className="px-1 py-0.5" style={{
                           fontSize: (style?.size_pt ?? 10) * PT_TO_PX,
                           fontWeight: (cell.runs.some(r => r.bold) || style?.bold) ? 'bold' : 'normal',

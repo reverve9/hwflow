@@ -365,9 +365,10 @@ export function TableEditModal({ block }: Props) {
     })
   }
 
-  const bdrW = (b: CellBorder) => {
+  const bdrPx = (b: CellBorder) => {
     switch (b.width) { case '0.7 mm': return 3; case '0.4 mm': return 2; case '0.25 mm': return 1.5; default: return 1 }
   }
+  const cssBorder = (b: CellBorder) => b.type === 'NONE' ? '0' : `${bdrPx(b)}px solid black`
 
   // ─── 렌더링 ────────────────────────────────────────────
   const cellInfoText = (() => {
@@ -435,14 +436,16 @@ export function TableEditModal({ block }: Props) {
                             colSpan={merge.colspan > 1 ? merge.colspan : undefined}
                             rowSpan={merge.rowspan > 1 ? merge.rowspan : undefined}
                             className={`relative p-0 ${isSelected ? 'ring-2 ring-navy-400 ring-inset z-10' : ''}`}
-                            style={{ backgroundColor: bg }}
+                            style={{
+                              backgroundColor: bg,
+                              borderTop: cssBorder(borders.top),
+                              borderBottom: cssBorder(borders.bottom),
+                              borderLeft: cssBorder(borders.left),
+                              borderRight: cssBorder(borders.right),
+                            }}
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
                             onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
                           >
-                            {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.top) }} />}
-                            {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black" style={{ height: bdrW(borders.bottom) }} />}
-                            {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black" style={{ width: bdrW(borders.left) }} />}
-                            {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black" style={{ width: bdrW(borders.right) }} />}
 
                             {/* 병합 표시 */}
                             {isMerged && (
