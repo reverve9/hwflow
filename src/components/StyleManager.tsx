@@ -3,7 +3,7 @@ import { useAppStore } from '@/store/useAppStore'
 import type { ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS, NUMBERING_OPTIONS } from '@/store/types'
 import { useFontList } from '@/lib/fonts'
-import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass, selectClass } from './Modal'
+import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass, selectClass, AlignIcon } from './Modal'
 
 interface EditableStyle {
   id: string
@@ -305,7 +305,7 @@ function StyleEditForm({ style, onUpdate, onRename, onKeyChange }: {
               {(['left', 'center', 'right', 'justify'] as const).map(a => (
                 <button key={a} onClick={() => onUpdate({ align: a })}
                   className={`flex-1 py-1.5 text-[10px] transition-colors ${style.data.align === a ? 'bg-navy-600 text-white' : 'bg-white text-navy-600 hover:bg-navy-50'}`}>
-                  {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
+                  <AlignIcon align={a} />
                 </button>
               ))}
             </div>

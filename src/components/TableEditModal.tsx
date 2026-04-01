@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, CellBorder, CellBorders, BorderPreset } from '@/store/types'
 import { SOLID_BORDERS, DEFAULT_CELL_BORDER, NONE_CELL_BORDER } from '@/store/types'
-import { Modal, ModalHeader } from './Modal'
+import { Modal, ModalHeader, AlignIcon } from './Modal'
 
 interface CellIndex { row: number; col: number }
 function cellKey(c: CellIndex) { return `${c.row},${c.col}` }
@@ -556,7 +556,7 @@ export function TableEditModal({ block }: Props) {
                         <button key={a}
                           onClick={() => forEachSelected((r, c) => setCellAligns(p => { const n = p.map(r => [...r]); n[r][c] = a; return n }))}
                           className={`flex-1 py-1 text-[10px] transition-colors ${cellAligns[primaryCell!.row][primaryCell!.col] === a ? 'bg-navy-600 text-white' : 'bg-white text-navy-600 hover:bg-navy-50'}`}>
-                          {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
+                          <AlignIcon align={a} />
                         </button>
                       ))}
                     </div>

@@ -64,3 +64,22 @@ export function FieldLabel({ children }: { children: ReactNode }) {
 
 export const inputClass = 'w-full bg-white border border-app-border rounded-md px-2 py-1.5 text-[11px] text-navy-800 outline-none'
 export const selectClass = inputClass
+
+/** 정렬 아이콘 (줄 모양) */
+export function AlignIcon({ align }: { align: 'left' | 'center' | 'right' | 'justify' }) {
+  const s = 14, g = 3 // size, gap between lines
+  const lines = [
+    { y: 1, w: align === 'right' ? 8 : align === 'center' ? 10 : 14 },
+    { y: 1 + g, w: align === 'justify' ? 14 : align === 'left' ? 10 : align === 'right' ? 10 : 14 },
+    { y: 1 + g * 2, w: align === 'right' ? 10 : align === 'center' ? 8 : align === 'justify' ? 14 : 12 },
+    { y: 1 + g * 3, w: align === 'justify' ? 14 : align === 'left' ? 8 : align === 'right' ? 12 : 10 },
+  ]
+  return (
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} className="block">
+      {lines.map((l, i) => {
+        const x = align === 'right' ? s - l.w : align === 'center' ? (s - l.w) / 2 : 0
+        return <line key={i} x1={x} y1={l.y} x2={x + l.w} y2={l.y} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      })}
+    </svg>
+  )
+}

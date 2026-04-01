@@ -3,7 +3,7 @@ import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS } from '@/store/types'
 import { useFontList } from '@/lib/fonts'
-import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass } from './Modal'
+import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass, AlignIcon } from './Modal'
 
 interface Props {
   block: IRBlock
@@ -132,7 +132,7 @@ export function BlockStyleModal({ block }: Props) {
                               overrideStyle.align === a ? 'bg-navy-600 text-white' : 'bg-[#f5f5f5] text-navy-600 hover:bg-navy-50'
                             }`}
                           >
-                            {a === 'left' ? '←' : a === 'center' ? '↔' : a === 'right' ? '→' : '⇔'}
+                            <AlignIcon align={a} />
                           </button>
                         ))}
                       </div>
