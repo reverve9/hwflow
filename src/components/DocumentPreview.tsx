@@ -26,7 +26,7 @@ export function DocumentPreview() {
   useEffect(() => {
     if (!anchorBlockID || !scrollContainerRef.current) return
     const el = scrollContainerRef.current.querySelector(`[data-preview-block="${anchorBlockID}"]`)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [anchorBlockID])
 
   const preset = getPresetData()
