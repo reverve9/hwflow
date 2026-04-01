@@ -39,12 +39,23 @@ function loadPresetList(): Array<{ id: string; name: string; data: StylePreset }
   return list
 }
 
+// DB 프리셋 캐시
+let dbPresetCache: Array<{ id: string; name: string; data: StylePreset }> = []
+
+export function setDBPresets(presets: Array<{ id: string; name: string; data: StylePreset }>) {
+  dbPresetCache = presets
+}
+
 function loadPresetData(id: string): StylePreset | null {
   // localStorage에 저장된 커스텀 프리셋 우선
   try {
     const saved = localStorage.getItem(`hwflow_preset_${id}`)
     if (saved) return JSON.parse(saved) as StylePreset
   } catch {}
+  // DB 프리셋
+  const dbPreset = dbPresetCache.find(p => p.id === id)
+  if (dbPreset) return dbPreset.data
+  // 번들 프리셋
   const presets = loadPresetList()
   return presets.find(p => p.id === id)?.data ?? null
 }
@@ -427,8 +438,11 @@ export const useAppStore = create<AppState>((set, get) => {
     setStyleDisplayNames: (names) => set({ styleDisplayNames: names }),
 
     reloadPresets: () => {
-      const list = loadPresetList()
-      set(s => ({ availablePresets: list.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
+      const local = loadPresetList()
+      const localIds = new Set(local.map(p => p.id))
+      const db = dbPresetCache.filter(p => !localIds.has(p.id))
+      const all = [...local, ...db]
+      set(s => ({ availablePresets: all.map(p => ({ id: p.id, name: p.name })), presetVersion: s.presetVersion + 1 }))
     },
 
     // Undo/Redo

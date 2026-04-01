@@ -4,6 +4,8 @@ import type { ParagraphStyleData } from '@/store/types'
 import { STYLE_LABELS, NUMBERING_OPTIONS } from '@/store/types'
 import { useFontList } from '@/lib/fonts'
 import { Modal, ModalHeader, ModalSection, FieldLabel, inputClass, selectClass, AlignIcon } from './Modal'
+import { savePresetToDB } from '@/lib/presetDB'
+import { getProfile } from '@/lib/auth'
 
 interface EditableStyle {
   id: string
@@ -28,6 +30,11 @@ export function StyleManager() {
   const [showMapping, setShowMapping] = useState(false)
   const [pageMargin, setPageMargin] = useState({ top: 20, bottom: 15, left: 15, right: 15 })
   const [saveMessage, setSaveMessage] = useState('')
+  const [myRole, setMyRole] = useState<string>('member')
+
+  useEffect(() => {
+    getProfile().then(p => { if (p) setMyRole(p.role) })
+  }, [])
 
   // 프리셋 로드
   useEffect(() => {
@@ -139,6 +146,33 @@ export function StyleManager() {
     setTimeout(() => setSaveMessage(''), 2000)
   }
 
+  const handleSaveToDB = async () => {
+    const preset = getPresetData()
+    if (!preset) return
+    const paragraphStyles: Record<string, ParagraphStyleData & { display_name?: string }> = {}
+    for (const s of styles) {
+      paragraphStyles[s.key] = { ...s.data }
+      if (s.displayName !== (STYLE_LABELS[s.key] ?? s.key) || !s.isBuiltin) {
+        paragraphStyles[s.key].display_name = s.displayName
+      }
+    }
+    const data = {
+      ...preset,
+      page: { ...preset.page, margin: { top_mm: pageMargin.top, bottom_mm: pageMargin.bottom, left_mm: pageMargin.left, right_mm: pageMargin.right } },
+      paragraph_styles: paragraphStyles,
+      style_mapping: styleMapping,
+    }
+    const name = preset.meta?.name ?? selectedPreset
+    const tenantId = myRole === 'super_admin' ? null : undefined
+    const result = await savePresetToDB(name, data as any, tenantId)
+    if (result.ok) {
+      setSaveMessage('서버 저장 완료')
+    } else {
+      setSaveMessage(result.error ?? '서버 저장 실패')
+    }
+    setTimeout(() => setSaveMessage(''), 2000)
+  }
+
   const handleExport = () => {
     const preset = getPresetData()
     if (!preset) return
@@ -200,6 +234,9 @@ export function StyleManager() {
             </svg>
           </button>
           <div className="flex-1" />
+          {myRole !== 'member' && (
+            <button onClick={handleSaveToDB} className="text-[11px] text-navy-600 hover:text-navy-800 font-medium transition-colors">서버 저장</button>
+          )}
           <button onClick={handleExport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">내보내기</button>
           <button onClick={handleImport} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors">가져오기</button>
         </div>
