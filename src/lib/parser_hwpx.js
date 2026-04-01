@@ -2,7 +2,12 @@
  * parser_hwpx.js — .hwpx 파일을 중간표현(IR)으로 변환
  *
  * HWPX = ZIP(fflate) + XML(fast-xml-parser)
- * header.xml → 폰트/스타일 정의, section0.xml → 본문 단락/표
+ * header.xml → 폰트/스타일 정의
+ * content.hpf → 멀티섹션 경로 (manifest)
+ * sectionN.xml → 본문 단락/표
+ *
+ * 참고: korean-law-mcp (github.com/chrisryugj/korean-law-mcp)
+ *       — 멀티섹션, cellSpan, 2-pass 테이블 빌드, 중첩 테이블
  */
 
 import { unzipSync } from 'fflate';
@@ -20,7 +25,7 @@ function browserFontName(name) {
 const xmlOpts = {
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
-  removeNSPrefix: true,  // 네임스페이스 프리픽스 제거 (hp:p → p, hh:font → font)
+  removeNSPrefix: true,
   preserveOrder: true,
 };
 
@@ -37,11 +42,106 @@ export function parseHwpx(buffer) {
   const headerBytes = files['Contents/header.xml'];
   const header = headerBytes ? _parseHeader(decoder.decode(headerBytes)) : {};
 
-  // 2. section0.xml → 본문
-  const sectionBytes = files['Contents/section0.xml'];
-  if (!sectionBytes) return [];
+  // 2. 멀티섹션 경로 탐색
+  const sectionPaths = _resolveSectionPaths(files, decoder);
+  if (sectionPaths.length === 0) return [];
 
-  return _parseSection(decoder.decode(sectionBytes), header);
+  // 3. 모든 섹션 파싱
+  const blocks = [];
+  for (const path of sectionPaths) {
+    const bytes = files[path];
+    if (!bytes) continue;
+    blocks.push(..._parseSection(decoder.decode(bytes), header));
+  }
+  return blocks;
+}
+
+/** content.hpf 매니페스트에서 섹션 경로 목록 추출 */
+function _resolveSectionPaths(files, decoder) {
+  // manifest에서 읽기
+  const manifestPaths = ['Contents/content.hpf', 'content.hpf'];
+  for (const mp of manifestPaths) {
+    const bytes = files[mp];
+    if (!bytes) continue;
+    const xml = decoder.decode(bytes);
+    const paths = _parseSectionPathsFromManifest(xml);
+    if (paths.length > 0) return paths;
+  }
+
+  // fallback: sectionN.xml 직접 탐색
+  const sectionFiles = Object.keys(files)
+    .filter(f => /[Ss]ection\d+\.xml$/.test(f))
+    .sort();
+  if (sectionFiles.length > 0) return sectionFiles;
+
+  // 최종 fallback: Contents/section0.xml
+  if (files['Contents/section0.xml']) return ['Contents/section0.xml'];
+  return [];
+}
+
+function _parseSectionPathsFromManifest(xml) {
+  try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      removeNSPrefix: true,
+      preserveOrder: true,
+    });
+    const parsed = parser.parse(xml);
+
+    // opf:item → href 수집, opf:spine → 순서 결정
+    const items = [];
+    const spineRefs = [];
+    _walkManifest(parsed, items, spineRefs);
+
+    const idToHref = new Map();
+    for (const item of items) {
+      let href = item.href;
+      if (href && !href.startsWith('Contents/') && !href.startsWith('/'))
+        href = 'Contents/' + href;
+      if (item.id) idToHref.set(item.id, href);
+    }
+
+    // spine 순서가 있으면 사용
+    if (spineRefs.length > 0) {
+      const ordered = spineRefs.map(ref => idToHref.get(ref)).filter(Boolean);
+      if (ordered.length > 0) return ordered;
+    }
+
+    // spine 없으면 id가 section-like인 것 정렬
+    return Array.from(idToHref.entries())
+      .filter(([id]) => /^s/i.test(id) || id.toLowerCase().includes('section'))
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([, href]) => href);
+  } catch {
+    return [];
+  }
+}
+
+function _walkManifest(nodes, items, spineRefs) {
+  if (!Array.isArray(nodes)) return;
+  for (const node of nodes) {
+    // item 태그
+    if (node['item'] !== undefined) {
+      const attrs = node[':@'] || {};
+      const id = attrs['@_id'] || '';
+      const href = attrs['@_href'] || '';
+      const mediaType = attrs['@_media-type'] || '';
+      if (href && (id.toLowerCase().includes('section') || /^s\d/i.test(id) || mediaType.includes('xml')))
+        items.push({ id, href });
+    }
+    // itemref 태그 (spine)
+    if (node['itemref'] !== undefined) {
+      const attrs = node[':@'] || {};
+      const idref = attrs['@_idref'] || '';
+      if (idref) spineRefs.push(idref);
+    }
+    // 재귀
+    for (const key of Object.keys(node)) {
+      if (key === ':@') continue;
+      if (Array.isArray(node[key])) _walkManifest(node[key], items, spineRefs);
+    }
+  }
 }
 
 /** header.xml에서 폰트/charPr/paraPr 추출 */
@@ -88,7 +188,6 @@ function _parseHeader(xml) {
       const id = parseInt(attrs['@_id'] || '0', 10);
       const height = parseInt(attrs['@_height'] || '1000', 10);
       const bold = (cp['charPr'] || []).some(c => c['bold'] !== undefined);
-      // fontRef에서 hangul 폰트 ID
       const fontRefNode = _findTag(cp['charPr'] || [], 'fontRef');
       const fontId = fontRefNode ? parseInt((fontRefNode[':@'] || {})['@_hangul'] || '0', 10) : 0;
       charPrs[id] = {
@@ -146,7 +245,7 @@ function _parseHeader(xml) {
   return { fonts, charPrs, paraPrs };
 }
 
-/** section0.xml에서 단락/표 추출 */
+/** section XML에서 단락/표 추출 */
 function _parseSection(xml, header) {
   const parser = new XMLParser(xmlOpts);
   const parsed = parser.parse(xml);
@@ -155,19 +254,173 @@ function _parseSection(xml, header) {
   if (!sec) return [];
 
   const blocks = [];
-  const secChildren = sec['sec'] || [];
+  _walkSection(sec['sec'] || [], blocks, header, null, []);
+  return blocks;
+}
 
-  for (const child of secChildren) {
+/**
+ * 재귀적 섹션 워커 — 중첩 테이블 지원
+ * tableCtx: 현재 테이블 상태, tableStack: 부모 테이블 스택
+ */
+function _walkSection(children, blocks, header, tableCtx, tableStack) {
+  for (const child of children) {
+    // 표
+    if (child['tbl'] !== undefined) {
+      if (tableCtx) tableStack.push(tableCtx);
+      const newTable = { rows: [], currentRow: [], cell: null };
+      _walkSection(child['tbl'] || [], blocks, header, newTable, tableStack);
+
+      // 마지막 행 마무리
+      if (newTable.currentRow.length > 0) newTable.rows.push(newTable.currentRow);
+
+      if (newTable.rows.length > 0) {
+        if (tableStack.length > 0) {
+          // 중첩 테이블: 부모 셀에 텍스트로 병합
+          const parent = tableStack.pop();
+          if (parent.cell) {
+            const nestedText = newTable.rows.map(r =>
+              r.map(c => c.runs ? c.runs.map(r => r.text).join('') : '').join(' | ')
+            ).join('\n');
+            if (!parent.cell.runs) parent.cell.runs = [];
+            parent.cell.runs.push({ text: '\n' + nestedText, bold: false });
+          }
+          tableCtx = parent;
+        } else {
+          // 최상위 테이블: 2-pass 빌드
+          const built = _buildTable(newTable.rows, header);
+          blocks.push(built);
+          tableCtx = null;
+        }
+      } else {
+        tableCtx = tableStack.length > 0 ? tableStack.pop() : null;
+      }
+      continue;
+    }
+
+    // 표 행
+    if (child['tr'] !== undefined) {
+      if (tableCtx) {
+        tableCtx.currentRow = [];
+        _walkSection(child['tr'] || [], blocks, header, tableCtx, tableStack);
+        if (tableCtx.currentRow.length > 0) tableCtx.rows.push(tableCtx.currentRow);
+        tableCtx.currentRow = [];
+      }
+      continue;
+    }
+
+    // 표 셀
+    if (child['tc'] !== undefined) {
+      if (tableCtx) {
+        const cell = _parseCell(child, header);
+        tableCtx.cell = cell;
+        // 셀 내부의 중첩 테이블 처리
+        const tcChildren = child['tc'] || [];
+        const nestedChildren = tcChildren.filter(c => c['tbl'] !== undefined);
+        if (nestedChildren.length > 0) {
+          _walkSection(nestedChildren, blocks, header, tableCtx, tableStack);
+        }
+        tableCtx.currentRow.push(tableCtx.cell);
+        tableCtx.cell = null;
+      }
+      continue;
+    }
+
+    // 단락
     if (child['p'] !== undefined) {
-      const block = _parseParagraph(child, header);
-      if (block) blocks.push(block);
-    } else if (child['tbl'] !== undefined) {
-      const block = _parseTable(child, header);
-      if (block) blocks.push(block);
+      if (tableCtx && tableCtx.cell) {
+        // 테이블 셀 안의 단락은 _parseCell에서 이미 처리됨
+      } else if (!tableCtx) {
+        const block = _parseParagraph(child, header);
+        if (block) blocks.push(block);
+      }
+      continue;
+    }
+
+    // 기타: 재귀
+    for (const key of Object.keys(child)) {
+      if (key === ':@') continue;
+      if (Array.isArray(child[key])) {
+        _walkSection(child[key], blocks, header, tableCtx, tableStack);
+      }
+    }
+  }
+}
+
+/** 2-pass 테이블 빌드 — colSpan/rowSpan 정확한 배치 */
+function _buildTable(rawRows, header) {
+  const numRows = rawRows.length;
+
+  // Pass 1: maxCols 계산
+  const tempOccupied = Array.from({ length: numRows }, () => Array(50).fill(false));
+  let maxCols = 0;
+
+  for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
+    let colIdx = 0;
+    for (const cell of rawRows[rowIdx]) {
+      while (colIdx < 50 && tempOccupied[rowIdx][colIdx]) colIdx++;
+      if (colIdx >= 50) break;
+      const cs = cell.colspan || 1;
+      const rs = cell.rowspan || 1;
+      for (let r = rowIdx; r < Math.min(rowIdx + rs, numRows); r++) {
+        for (let c = colIdx; c < Math.min(colIdx + cs, 50); c++) {
+          tempOccupied[r][c] = true;
+        }
+      }
+      colIdx += cs;
+      if (colIdx > maxCols) maxCols = colIdx;
     }
   }
 
-  return blocks;
+  if (maxCols === 0) return { type: 'table', rows: [], has_header: false };
+
+  // Pass 2: 실제 배치
+  const occupied = Array.from({ length: numRows }, () => Array(maxCols).fill(false));
+  const grid = Array.from({ length: numRows }, () => []);
+
+  for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
+    let colIdx = 0;
+    let cellIdx = 0;
+    // 행에 maxCols만큼 빈 셀 초기화
+    for (let c = 0; c < maxCols; c++) {
+      grid[rowIdx].push({
+        runs: [{ text: '', bold: false }],
+        align: 'left', valign: 'center', bgColor: null,
+        colspan: 1, rowspan: 1, merged: true,
+      });
+    }
+
+    while (colIdx < maxCols && cellIdx < rawRows[rowIdx].length) {
+      while (colIdx < maxCols && occupied[rowIdx][colIdx]) colIdx++;
+      if (colIdx >= maxCols) break;
+
+      const cell = rawRows[rowIdx][cellIdx];
+      const cs = cell.colspan || 1;
+      const rs = cell.rowspan || 1;
+
+      grid[rowIdx][colIdx] = { ...cell, merged: false };
+
+      for (let r = rowIdx; r < Math.min(rowIdx + rs, numRows); r++) {
+        for (let c = colIdx; c < Math.min(colIdx + cs, maxCols); c++) {
+          occupied[r][c] = true;
+        }
+      }
+      colIdx += cs;
+      cellIdx++;
+    }
+  }
+
+  // 헤더 추정: 첫 행의 모든 셀이 bold
+  let hasHeader = false;
+  if (grid.length > 0) {
+    const firstRow = grid[0];
+    hasHeader = firstRow.every(cell => {
+      if (cell.merged) return true;
+      const contentRuns = (cell.runs || []).filter(r => (r.text || '').trim());
+      return contentRuns.length === 0 || contentRuns.every(r => r.bold);
+    });
+  }
+
+  return { type: 'table', rows: grid, has_header: hasHeader };
 }
 
 /** 단락(hp:p) 파싱 */
@@ -250,67 +503,47 @@ function _parseParagraph(pNode, header) {
   return result;
 }
 
-/** 표(hp:tbl) 파싱 */
-function _parseTable(tblNode, header) {
-  const tblChildren = tblNode['tbl'] || [];
-  const rows = [];
-
-  for (const child of tblChildren) {
-    if (child['tr'] !== undefined) {
-      const trChildren = child['tr'] || [];
-      const cells = [];
-
-      for (const tcNode of trChildren) {
-        if (tcNode['tc'] !== undefined) {
-          const cell = _parseCell(tcNode, header);
-          cells.push(cell);
-        }
-      }
-      if (cells.length > 0) rows.push(cells);
-    }
-  }
-
-  // 헤더 추정: 첫 행의 모든 셀이 bold
-  let hasHeader = false;
-  if (rows.length > 0) {
-    const firstRow = rows[0];
-    hasHeader = firstRow.every(cell => {
-      const contentRuns = (cell.runs || []).filter(r => (r.text || '').trim());
-      return contentRuns.length === 0 || contentRuns.every(r => r.bold);
-    });
-  }
-
-  return { type: 'table', rows, has_header: hasHeader };
-}
-
 /** 셀(hp:tc) 파싱 */
 function _parseCell(tcNode, header) {
   const tcChildren = tcNode['tc'] || [];
   const runs = [];
   let colspan = 1, rowspan = 1;
 
-  // cellAddr에서 colspan/rowspan
+  // cellSpan 태그에서 colSpan/rowSpan (korean-law-mcp 참조)
+  const cellSpanNode = _findTag(tcChildren, 'cellSpan');
+  if (cellSpanNode) {
+    const attrs = cellSpanNode[':@'] || {};
+    const cs = parseInt(attrs['@_colSpan'] || '1', 10);
+    const rs = parseInt(attrs['@_rowSpan'] || '1', 10);
+    if (cs > 0) colspan = cs;
+    if (rs > 0) rowspan = rs;
+  }
+
+  // cellAddr에서도 시도
   const cellAddrNode = _findTag(tcChildren, 'cellAddr');
   if (cellAddrNode) {
     const attrs = cellAddrNode[':@'] || {};
-    colspan = parseInt(attrs['@_colSpan'] || '1', 10);
-    rowspan = parseInt(attrs['@_rowSpan'] || '1', 10);
+    const cs = parseInt(attrs['@_colSpan'] || '0', 10);
+    const rs = parseInt(attrs['@_rowSpan'] || '0', 10);
+    if (cs > 1) colspan = cs;
+    if (rs > 1) rowspan = rs;
   }
 
-  // 셀 속성에서 span
+  // tc 속성에서도 시도
   const tcAttrs = tcNode[':@'] || {};
-  if (tcAttrs['@_colSpan']) colspan = parseInt(tcAttrs['@_colSpan'], 10);
-  if (tcAttrs['@_rowSpan']) rowspan = parseInt(tcAttrs['@_rowSpan'], 10);
+  if (tcAttrs['@_colSpan']) colspan = Math.max(colspan, parseInt(tcAttrs['@_colSpan'], 10));
+  if (tcAttrs['@_rowSpan']) rowspan = Math.max(rowspan, parseInt(tcAttrs['@_rowSpan'], 10));
 
-  // cellPr에서 bgColor
+  // cellPr에서 bgColor + span
   let bgColor = null;
   const cellPrNode = _findTag(tcChildren, 'cellPr');
   if (cellPrNode) {
     const cpAttrs = cellPrNode[':@'] || {};
-    if (cpAttrs['@_colSpan']) colspan = parseInt(cpAttrs['@_colSpan'], 10);
-    if (cpAttrs['@_rowSpan']) rowspan = parseInt(cpAttrs['@_rowSpan'], 10);
+    if (cpAttrs['@_colSpan']) colspan = Math.max(colspan, parseInt(cpAttrs['@_colSpan'], 10));
+    if (cpAttrs['@_rowSpan']) rowspan = Math.max(rowspan, parseInt(cpAttrs['@_rowSpan'], 10));
   }
 
+  // 셀 내 단락 파싱
   for (const child of tcChildren) {
     if (child['p'] !== undefined) {
       if (runs.length > 0) runs.push({ text: '\n', bold: false });
@@ -323,10 +556,7 @@ function _parseCell(tcNode, header) {
 
   if (runs.length === 0) runs.push({ text: '', bold: false });
 
-  const cell = { runs, align: 'left', valign: 'center', bgColor };
-  if (colspan > 1) cell.colspan = colspan;
-  if (rowspan > 1) cell.rowspan = rowspan;
-  return cell;
+  return { runs, align: 'left', valign: 'center', bgColor, colspan, rowspan };
 }
 
 /** preserveOrder 배열에서 태그 찾기 */
