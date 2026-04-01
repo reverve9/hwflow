@@ -270,7 +270,8 @@ function classifyBlocks(lines: LineGroup[]) {
     const type = getType(line.fontSize, trimmed)
     const isHeading = type !== 'body'
     const lineGap = prevY > 0 ? Math.abs(prevY - line.y) : 0
-    const bigGap = lineGap > line.fontSize * 2
+    const bigGap = lineGap > line.fontSize * 1.8
+    const mediumGap = lineGap > line.fontSize * 1.3
 
     // 큰 줄간격 → 빈 블록 삽입 (여백 표현)
     if (bigGap && prevY > 0) {
@@ -278,14 +279,16 @@ function classifyBlocks(lines: LineGroup[]) {
       blocks.push({ type: 'body', runs: [{ text: '', bold: false }] })
     }
 
-    if (isHeading || !currentBlock || currentBlock.type !== type || bigGap) {
+    const prevBold = currentBlock?.runs[currentBlock.runs.length - 1]?.bold ?? false
+    const boldChanged = currentBlock && line.bold !== prevBold
+
+    if (isHeading || !currentBlock || currentBlock.type !== type || bigGap || mediumGap || boldChanged) {
       currentBlock = {
         type,
         runs: [{ text: trimmed, bold: line.bold || isHeading }],
       }
       blocks.push(currentBlock)
     } else {
-      // 같은 본문 단락에 이어 붙이기
       const lastRun = currentBlock.runs[currentBlock.runs.length - 1]
       if (lastRun.bold === line.bold) {
         lastRun.text += ' ' + trimmed
@@ -371,7 +374,8 @@ function classifyBlocksWithImages(elements: PageElement[]) {
     const type = getType(line.fontSize)
     const isHeading = type !== 'body'
     const lineGap = prevY > 0 ? Math.abs(prevY - line.y) : 0
-    const bigGap = lineGap > line.fontSize * 2
+    const bigGap = lineGap > line.fontSize * 1.8
+    const mediumGap = lineGap > line.fontSize * 1.3
 
     // 큰 줄간격 → 빈 블록 삽입 (여백 표현)
     if (bigGap && prevY > 0) {
@@ -379,7 +383,11 @@ function classifyBlocksWithImages(elements: PageElement[]) {
       blocks.push({ type: 'body', runs: [{ text: '', bold: false }] })
     }
 
-    if (isHeading || !currentBlock || currentBlock.type !== type || bigGap) {
+    // bold 변경도 새 블록으로 분리
+    const prevBold = currentBlock?.runs[currentBlock.runs.length - 1]?.bold ?? false
+    const boldChanged = currentBlock && line.bold !== prevBold
+
+    if (isHeading || !currentBlock || currentBlock.type !== type || bigGap || mediumGap || boldChanged) {
       currentBlock = { type, runs: [{ text: trimmed, bold: line.bold || isHeading }] }
       blocks.push(currentBlock)
     } else {
