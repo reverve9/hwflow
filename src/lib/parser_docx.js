@@ -226,12 +226,6 @@ function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps, docDefault
   const origSpaceAfter = spaceAfter || sp.spaceAfter || dd.spaceAfter || 0;
   const origIndentLeft = indentLeft || sp.indentLeft || 0;
 
-  // 디버그: 첫 5개 단락만
-  if (typeof window !== 'undefined' && !window._docxDbgCount) window._docxDbgCount = 0;
-  if (typeof window !== 'undefined' && window._docxDbgCount < 5) {
-    window._docxDbgCount++;
-    console.log('[DOCX] para', { styleId, irType, inline: { align, lineHeight, spaceBefore, spaceAfter, indentLeft }, style: sp, defaults: dd, resolved: { origLineHeight, origSpaceBefore, origSpaceAfter, origIndentLeft } });
-  }
 
   // 런에서 내부 필드 제거
   for (const r of runs) { delete r._font; delete r._size; }
@@ -343,7 +337,6 @@ function _parseTableOrdered(tblNode, styleIdToName) {
     }
   }
   const totalGridWidth = colWidths.reduce((a, b) => a + b, 0);
-  console.log('[DOCX] table grid:', { colWidths, totalGridWidth });
 
   for (const child of tblChildren) {
     if (child['w:tr'] !== undefined) {
@@ -432,12 +425,6 @@ function _parseCellOrdered(tcNode, styleIdToName) {
   const cell = { runs };
   if (widthPct > 0) cell.widthPct = widthPct;
   if (gridSpan > 1) cell.colspan = gridSpan;
-  // 디버그
-  if (typeof window !== 'undefined' && !window._docxCellDbg) window._docxCellDbg = 0;
-  if (typeof window !== 'undefined' && window._docxCellDbg < 5) {
-    window._docxCellDbg++;
-    console.log('[DOCX] cell', { widthPct, gridSpan, text: runs.map(r => r.text).join('').slice(0, 30) });
-  }
   return cell;
 }
 

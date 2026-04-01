@@ -74,18 +74,46 @@ export function StyleInspector() {
                   <Row label="굵기" value={style.bold ? 'Bold' : 'Regular'} />
                 </Section>
                 <Section title="단락">
-                  <Row label="정렬" value={ALIGN_LABELS[style.align] ?? style.align} />
+                  {os?.align ? (
+                    <>
+                      <Row label="정렬 원본" value={ALIGN_LABELS[os.align] ?? os.align} />
+                      <Row label="정렬 적용" value={ALIGN_LABELS[style.align] ?? style.align} highlight={os.align !== style.align} />
+                    </>
+                  ) : (
+                    <Row label="정렬" value={ALIGN_LABELS[style.align] ?? style.align} />
+                  )}
                   {os?.line_height_percent ? (
                     <>
-                      <Row label="원본" value={`${os.line_height_percent}%`} />
-                      <Row label="적용" value={`${style.line_height_percent}%`} highlight={os.line_height_percent !== style.line_height_percent} />
+                      <Row label="줄간격 원본" value={`${os.line_height_percent}%`} />
+                      <Row label="줄간격 적용" value={`${style.line_height_percent}%`} highlight={os.line_height_percent !== style.line_height_percent} />
                     </>
                   ) : (
                     <Row label="줄간격" value={`${style.line_height_percent}%`} />
                   )}
-                  <Row label="들여쓰기" value={hwpunitToMM(style.indent_left_hwpunit)} />
-                  <Row label="단락 전" value={hwpunitToMM(style.space_before_hwpunit)} />
-                  <Row label="단락 후" value={hwpunitToMM(style.space_after_hwpunit)} />
+                  {os?.indent_left_hwpunit ? (
+                    <>
+                      <Row label="들여쓰기 원본" value={hwpunitToMM(os.indent_left_hwpunit)} />
+                      <Row label="들여쓰기 적용" value={hwpunitToMM(style.indent_left_hwpunit)} highlight={os.indent_left_hwpunit !== style.indent_left_hwpunit} />
+                    </>
+                  ) : (
+                    <Row label="들여쓰기" value={hwpunitToMM(style.indent_left_hwpunit)} />
+                  )}
+                  {os?.space_before_hwpunit ? (
+                    <>
+                      <Row label="단락 전 원본" value={hwpunitToMM(os.space_before_hwpunit)} />
+                      <Row label="단락 전 적용" value={hwpunitToMM(style.space_before_hwpunit)} highlight={os.space_before_hwpunit !== style.space_before_hwpunit} />
+                    </>
+                  ) : (
+                    <Row label="단락 전" value={hwpunitToMM(style.space_before_hwpunit)} />
+                  )}
+                  {os?.space_after_hwpunit ? (
+                    <>
+                      <Row label="단락 후 원본" value={hwpunitToMM(os.space_after_hwpunit)} />
+                      <Row label="단락 후 적용" value={hwpunitToMM(style.space_after_hwpunit)} highlight={os.space_after_hwpunit !== style.space_after_hwpunit} />
+                    </>
+                  ) : (
+                    <Row label="단락 후" value={hwpunitToMM(style.space_after_hwpunit)} />
+                  )}
                 </Section>
               </>
             )
