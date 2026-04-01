@@ -358,10 +358,22 @@ export function TableEditModal({ block }: Props) {
         for (let c = cRange[0]; c <= cRange[1]; c++) {
           const isTop = r === rRange[0], isBottom = r === rRange[1]
           const isLeft = c === cRange[0], isRight = c === cRange[1]
-          n[r][c].top = (isTop && merged.outerTop) || (!isTop && merged.innerH) ? { ...on } : { ...off }
-          n[r][c].bottom = (isBottom && merged.outerBottom) || (!isBottom && merged.innerH) ? { ...on } : { ...off }
-          n[r][c].left = (isLeft && merged.outerLeft) || (!isLeft && merged.innerV) ? { ...on } : { ...off }
-          n[r][c].right = (isRight && merged.outerRight) || (!isRight && merged.innerV) ? { ...on } : { ...off }
+
+          // 외곽 top: 해당 프리셋이 관여하면 설정, 아니면 기존 유지
+          if (merged.outerTop || next.has('none')) n[r][c].top = (isTop && merged.outerTop) ? { ...on } : (!isTop && merged.innerH) ? { ...on } : next.has('none') ? { ...off } : n[r][c].top
+          if (merged.outerBottom || next.has('none')) n[r][c].bottom = (isBottom && merged.outerBottom) ? { ...on } : (!isBottom && merged.innerH) ? { ...on } : next.has('none') ? { ...off } : n[r][c].bottom
+          if (merged.outerLeft || next.has('none')) n[r][c].left = (isLeft && merged.outerLeft) ? { ...on } : (!isLeft && merged.innerV) ? { ...on } : next.has('none') ? { ...off } : n[r][c].left
+          if (merged.outerRight || next.has('none')) n[r][c].right = (isRight && merged.outerRight) ? { ...on } : (!isRight && merged.innerV) ? { ...on } : next.has('none') ? { ...off } : n[r][c].right
+
+          // 내부선
+          if (merged.innerH) {
+            if (!isTop) n[r][c].top = { ...on }
+            if (!isBottom) n[r][c].bottom = { ...on }
+          }
+          if (merged.innerV) {
+            if (!isLeft) n[r][c].left = { ...on }
+            if (!isRight) n[r][c].right = { ...on }
+          }
         }
       }
       return n
