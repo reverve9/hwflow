@@ -3,6 +3,7 @@ import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, CellBorder, CellBorders, BorderPreset } from '@/store/types'
 import { SOLID_BORDERS, DEFAULT_CELL_BORDER, NONE_CELL_BORDER } from '@/store/types'
 import { Modal, ModalHeader, AlignIcon } from './Modal'
+import { useFontList } from '@/lib/fonts'
 
 interface CellIndex { row: number; col: number }
 function cellKey(c: CellIndex) { return `${c.row},${c.col}` }
@@ -678,14 +679,7 @@ function CellStyleSection({ row, col, cellFonts, cellSizes, cellFontBolds, cellL
       <div className="space-y-2">
         <div>
           <div className="text-[10px] text-app-muted mb-1">폰트</div>
-          <select value={font} onChange={e => onUpdate('font', e.target.value)}
-            className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none">
-            <option value="HCR Batang">HCR Batang</option>
-            <option value="HCR Dotum">HCR Dotum</option>
-            <option value="맑은 고딕">맑은 고딕</option>
-            <option value="나눔고딕">나눔고딕</option>
-            <option value="나눔명조">나눔명조</option>
-          </select>
+          <CellFontSelect value={font} onChange={v => onUpdate('font', v)} />
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -705,5 +699,28 @@ function CellStyleSection({ row, col, cellFonts, cellSizes, cellFontBolds, cellL
         </label>
       </div>
     </div>
+  )
+}
+
+function CellFontSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const allFonts = useFontList()
+  const priorityNames = ['HCR Batang', 'HCR Dotum', '맑은 고딕', '나눔고딕', '나눔명조']
+  const priority = allFonts.filter(f => priorityNames.includes(f.name))
+  const others = allFonts.filter(f => !priorityNames.includes(f.name))
+
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full bg-white border border-app-border rounded-md px-1.5 py-1 text-[11px] text-navy-800 outline-none">
+      {priority.length > 0 && (
+        <optgroup label="주요 폰트">
+          {priority.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+        </optgroup>
+      )}
+      {others.length > 0 && (
+        <optgroup label="시스템 폰트">
+          {others.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+        </optgroup>
+      )}
+    </select>
   )
 }
