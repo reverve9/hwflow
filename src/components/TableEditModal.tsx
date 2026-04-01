@@ -115,7 +115,7 @@ export function TableEditModal({ block }: Props) {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())
   const [anchorCell, setAnchorCell] = useState<CellIndex | null>(null)
   const [editingCell, setEditingCell] = useState<CellIndex | null>(null)
-  const [activePreset, setActivePreset] = useState<BorderPreset | null>(null)
+  const [activePresets, setActivePresets] = useState<Set<BorderPreset>>(new Set())
 
   const rowCount = cellTexts.length
   const colCount = cellTexts[0]?.length ?? 0
@@ -316,37 +316,55 @@ export function TableEditModal({ block }: Props) {
   }
 
   // ─── 테두리 프리셋 ────────────────────────────────────
-  const applyPreset = (preset: BorderPreset) => {
-    setActivePreset(preset)
-    const f = getFlags(preset)
-    const line: CellBorder = { type: lineType, width: lineWidth }
-    const outer = line
-
+  const togglePreset = (preset: BorderPreset) => {
     if (selectedCells.size === 0) return
+
+    // 토글: "없음"은 전체 해제, 그 외는 개별 토글
+    const next = new Set(activePresets)
+    if (preset === 'none') {
+      next.clear()
+      next.add('none')
+    } else {
+      next.delete('none')
+      if (next.has(preset)) next.delete(preset)
+      else next.add(preset)
+    }
+    setActivePresets(next)
+
+    // 활성화된 프리셋들의 flags 합산
+    const merged = { outerTop: false, outerBottom: false, outerLeft: false, outerRight: false, innerH: false, innerV: false }
+    for (const p of next) {
+      if (p === 'none') continue
+      const f = getFlags(p)
+      if (f.outerTop) merged.outerTop = true
+      if (f.outerBottom) merged.outerBottom = true
+      if (f.outerLeft) merged.outerLeft = true
+      if (f.outerRight) merged.outerRight = true
+      if (f.innerH) merged.innerH = true
+      if (f.innerV) merged.innerV = true
+    }
+
+    const line: CellBorder = { type: lineType, width: lineWidth }
     const cells = [...selectedCells].map(k => k.split(',').map(Number))
     const rRange: [number, number] = [Math.min(...cells.map(c => c[0])), Math.max(...cells.map(c => c[0]))]
     const cRange: [number, number] = [Math.min(...cells.map(c => c[1])), Math.max(...cells.map(c => c[1]))]
 
     setCellBorders(prev => {
-      const next = prev.map(r => r.map(c => ({ ...c })))
+      const n = prev.map(r => r.map(c => ({ ...c })))
       const on = { ...line }
       const off = { ...NONE_CELL_BORDER }
 
-      // 모든 셀 4변을 직접 설정 (렌더링도 4변 모두 그림)
       for (let r = rRange[0]; r <= rRange[1]; r++) {
         for (let c = cRange[0]; c <= cRange[1]; c++) {
-          const isTop = r === rRange[0]
-          const isBottom = r === rRange[1]
-          const isLeft = c === cRange[0]
-          const isRight = c === cRange[1]
-
-          next[r][c].top = (isTop && f.outerTop) ? { ...on } : (!isTop && f.innerH) ? { ...on } : { ...off }
-          next[r][c].bottom = (isBottom && f.outerBottom) ? { ...on } : (!isBottom && f.innerH) ? { ...on } : { ...off }
-          next[r][c].left = (isLeft && f.outerLeft) ? { ...on } : (!isLeft && f.innerV) ? { ...on } : { ...off }
-          next[r][c].right = (isRight && f.outerRight) ? { ...on } : (!isRight && f.innerV) ? { ...on } : { ...off }
+          const isTop = r === rRange[0], isBottom = r === rRange[1]
+          const isLeft = c === cRange[0], isRight = c === cRange[1]
+          n[r][c].top = (isTop && merged.outerTop) || (!isTop && merged.innerH) ? { ...on } : { ...off }
+          n[r][c].bottom = (isBottom && merged.outerBottom) || (!isBottom && merged.innerH) ? { ...on } : { ...off }
+          n[r][c].left = (isLeft && merged.outerLeft) || (!isLeft && merged.innerV) ? { ...on } : { ...off }
+          n[r][c].right = (isRight && merged.outerRight) || (!isRight && merged.innerV) ? { ...on } : { ...off }
         }
       }
-      return next
+      return n
     })
   }
 
@@ -502,10 +520,10 @@ export function TableEditModal({ block }: Props) {
               </div>
               <div className="grid grid-cols-5 gap-1">
                 {PRESETS.map(p => (
-                  <button key={p} onClick={() => applyPreset(p)}
+                  <button key={p} onClick={() => togglePreset(p)}
                     disabled={selectedCells.size === 0}
                     className={`flex items-center justify-center border rounded-md transition-colors p-0.5 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
-                      activePreset === p && selectedCells.size > 0
+                      activePresets.has(p) && selectedCells.size > 0
                         ? 'bg-navy-100 border-navy-400 shadow-inner'
                         : 'bg-white border-app-border hover:bg-navy-50'
                     }`}>
