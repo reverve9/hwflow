@@ -219,6 +219,7 @@ export function DocumentPreview() {
                           borderBottom: cssBdr(cell.borders.bottom),
                           borderLeft: cssBdr(cell.borders.left),
                           borderRight: cssBdr(cell.borders.right),
+                          ...(cell.widthPct ? { width: `${cell.widthPct}%` } : {}),
                         }}>
                         <div className="px-1 py-0.5" style={{
                           fontSize: (style?.size_pt ?? 10) * PT_TO_PX,

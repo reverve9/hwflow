@@ -26,6 +26,7 @@ export interface IRTableCell {
   colspan?: number  // default 1
   rowspan?: number  // default 1
   merged?: boolean  // true = 다른 셀의 span에 의해 가려진 셀
+  widthPct?: number // 셀 너비 (표 전체 대비 %)
 }
 
 export type BlockType = 'heading1' | 'heading2' | 'heading3' | 'heading4' | 'body' | 'table' | string

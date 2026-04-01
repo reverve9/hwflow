@@ -60,6 +60,7 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
             colspan: (item.colspan as number) ?? 1,
             rowspan: (item.rowspan as number) ?? 1,
             merged: (item.merged as boolean) ?? false,
+            ...(item.widthPct ? { widthPct: item.widthPct as number } : {}),
           }
         })
       )
