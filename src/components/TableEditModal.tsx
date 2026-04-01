@@ -311,28 +311,32 @@ export function TableEditModal({ block }: Props) {
 
     setCellBorders(prev => {
       const next = prev.map(r => r.map(c => ({ ...c })))
-      // 초기화
-      for (let r = rRange[0]; r <= rRange[1]; r++)
-        for (let c = cRange[0]; c <= cRange[1]; c++)
-          next[r][c] = { top: { ...NONE_CELL_BORDER }, bottom: { ...NONE_CELL_BORDER }, left: { ...NONE_CELL_BORDER }, right: { ...NONE_CELL_BORDER } }
+      const on = { ...line }
+      const off = { ...NONE_CELL_BORDER }
 
-      // 외곽선 (outer): 표 전체 가장자리에만
-      if (f.outerTop) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = { ...line }
-      if (f.outerBottom) for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[1]][c].bottom = { ...line }
-      if (f.outerLeft) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = { ...line }
-      if (f.outerRight) for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[1]].right = { ...line }
-      // 개별 방향 (all): 모든 셀의 해당 변
-      if (f.allTop) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].top = { ...line }
-      if (f.allBottom) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...line }
-      if (f.allLeft) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].left = { ...line }
-      if (f.allRight) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].right = { ...line }
-      // 내부선 (inner): 셀 사이에만
-      if (f.innerH && rRange[1] > rRange[0])
+      // 외곽선
+      for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[0]][c].top = f.outerTop ? { ...on } : { ...off }
+      for (let c = cRange[0]; c <= cRange[1]; c++) next[rRange[1]][c].bottom = f.outerBottom ? { ...on } : { ...off }
+      for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[0]].left = f.outerLeft ? { ...on } : { ...off }
+      for (let r = rRange[0]; r <= rRange[1]; r++) next[r][cRange[1]].right = f.outerRight ? { ...on } : { ...off }
+
+      // 개별 방향: 모든 셀의 해당 변
+      if (f.allTop) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].top = { ...on }
+      if (f.allBottom) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].bottom = { ...on }
+      if (f.allLeft) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].left = { ...on }
+      if (f.allRight) for (let r = rRange[0]; r <= rRange[1]; r++) for (let c = cRange[0]; c <= cRange[1]; c++) next[r][c].right = { ...on }
+
+      // 내부선: 한쪽만 적용 (bottom/right만, 겹침 방지)
+      if (rRange[1] > rRange[0]) {
         for (let r = rRange[0]; r < rRange[1]; r++)
-          for (let c = cRange[0]; c <= cRange[1]; c++) { next[r][c].bottom = { ...line }; next[r + 1][c].top = { ...line } }
-      if (f.innerV && cRange[1] > cRange[0])
+          for (let c = cRange[0]; c <= cRange[1]; c++)
+            next[r][c].bottom = f.innerH ? { ...on } : { ...off }
+      }
+      if (cRange[1] > cRange[0]) {
         for (let c = cRange[0]; c < cRange[1]; c++)
-          for (let r = rRange[0]; r <= rRange[1]; r++) { next[r][c].right = { ...line }; next[r][c + 1].left = { ...line } }
+          for (let r = rRange[0]; r <= rRange[1]; r++)
+            next[r][c].right = f.innerV ? { ...on } : { ...off }
+      }
       return next
     })
   }
