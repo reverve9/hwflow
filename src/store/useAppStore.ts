@@ -248,10 +248,9 @@ export const useAppStore = create<AppState>((set, get) => {
       if (block.isTable) {
         const rows = state.effectiveTableRows(block)
         if (rows.length === 1 && rows[0].length === 1) {
-          // 1×1 표: 셀 내용 그대로 (줄바꿈 보존)
           return '[표] ' + rows[0][0].runs.map(r => r.text).join('')
         }
-        if (rows[0]) return '[표] ' + rows[0].map(c => c.runs.map(r => r.text).join('')).join(' | ')
+        return '[표]\n' + rows.map(r => r.map(c => c.runs.map(r => r.text).join('')).join(' | ')).join('\n')
       }
       return state.blockTextOverrides[block.id] ?? block.text
     },

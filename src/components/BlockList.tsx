@@ -98,7 +98,7 @@ export function BlockList() {
                 <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded ${config.color} mt-0.5`}>
                   {config.label}
                 </span>
-                <span className={`flex-1 ${config.font} ${config.weight} text-navy-800 line-clamp-3 whitespace-pre-wrap`}>
+                <span className={`flex-1 ${config.font} ${config.weight} text-navy-800 ${eType === 'table' ? 'line-clamp-6' : 'line-clamp-3'} whitespace-pre-wrap`}>
                   {eText || '\u00A0'}
                 </span>
                 {hasOverride && (
