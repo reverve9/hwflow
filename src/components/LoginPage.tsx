@@ -7,11 +7,12 @@ interface Props {
 
 export function LoginPage({ onLogin }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem('hwflow_remember_email') ?? '')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [remember, setRemember] = useState(() => !!localStorage.getItem('hwflow_remember_email'))
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,6 +21,8 @@ export function LoginPage({ onLogin }: Props) {
     setError('')
     const result = await login(email, password)
     if (result.ok) {
+      if (remember) localStorage.setItem('hwflow_remember_email', email.trim().toLowerCase())
+      else localStorage.removeItem('hwflow_remember_email')
       onLogin()
     } else {
       setError(result.error ?? '로그인 실패')
@@ -104,6 +107,14 @@ export function LoginPage({ onLogin }: Props) {
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-800 placeholder:text-gray-300 outline-none focus:border-navy-400 focus:ring-2 focus:ring-navy-100 transition-all"
               />
             </div>
+
+            {mode === 'login' && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+                  className="accent-navy-500 rounded" />
+                <span className="text-[11px] text-gray-500">로그인 정보 기억</span>
+              </label>
+            )}
 
             {error && (
               <p className="text-[11px] text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
