@@ -61,6 +61,13 @@ export function DocumentPreview() {
 
     for (const block of irBlocks) {
       const eType = effectiveType(block)
+      // 페이지 나누기: 현재 페이지를 끊고 새 페이지 시작
+      if (eType === 'pagebreak') {
+        if (page.length > 0) result.push(page)
+        page = []
+        used = 0
+        continue
+      }
       const h = estimateHeight(block, eType)
       if (used + h > contentH && page.length > 0) {
         result.push(page)

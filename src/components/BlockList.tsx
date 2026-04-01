@@ -10,6 +10,7 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; font: string; 
   body: { label: '본문', color: 'bg-navy-50 text-navy-500', font: 'text-sm', weight: 'font-normal', indent: 1 },
   table: { label: '표', color: 'bg-orange-100 text-orange-700', font: 'text-sm', weight: 'font-normal', indent: 0 },
   image: { label: '이미지', color: 'bg-teal-100 text-teal-700', font: 'text-sm', weight: 'font-normal', indent: 0 },
+  pagebreak: { label: '페이지 나누기', color: 'bg-gray-200 text-gray-500', font: 'text-sm', weight: 'font-normal', indent: 0 },
 }
 
 function getConfig(type: string) {
@@ -127,10 +128,20 @@ export function BlockList() {
         <button
           onClick={() => addBlock(selected?.id)}
           className="p-1 rounded hover:bg-navy-100 text-app-muted"
-          title="블록 추가"
+          title="본문 블록 추가"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <button
+          onClick={() => addBlock(selected?.id, 'pagebreak', '— 페이지 나누기 —')}
+          className="p-1 rounded hover:bg-navy-100 text-app-muted"
+          title="페이지 나누기"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v3m0 9v3" />
           </svg>
         </button>
         <button

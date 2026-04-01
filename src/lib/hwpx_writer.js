@@ -496,10 +496,16 @@ export class HwpxWriter {
     for (let i = startIdx; i < irBlocks.length; i++) {
       const block = irBlocks[i];
       const blockType = block.type || 'body';
-      if (blockType === 'table') {
+      if (blockType === 'pagebreak') {
+        // 페이지 나누기: pageBreak="1" 속성으로 강제 분할
+        const ppr = this._paraPrMap.body || 0;
+        const cpr = this._charPrMap.body || 0;
+        xml += `<hp:p id="${randomId()}" paraPrIDRef="${ppr}" styleIDRef="0" pageBreak="1" columnBreak="0" merged="0">`;
+        xml += `<hp:run charPrIDRef="${cpr}"><hp:t></hp:t></hp:run>`;
+        xml += '</hp:p>';
+      } else if (blockType === 'table') {
         xml += this._tableXml(block);
       } else if (blockType === 'image') {
-        // 이미지 플레이스홀더 — 빈 단락 + [이미지] 텍스트
         xml += this._paragraphXml({ type: 'body', runs: [{ text: '[이미지 위치]', bold: false }] });
       } else {
         xml += this._paragraphXml(block);
