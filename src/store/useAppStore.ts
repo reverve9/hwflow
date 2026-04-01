@@ -78,7 +78,7 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
   }
 
   const block: IRBlock = {
-    id: uid(),
+    id: (dict.id as string) ?? uid(),
     type,
     text,
     runs: (dict.runs as IRBlock['runs']) ?? [],
