@@ -476,14 +476,23 @@ function _parseCell(tcNode, header) {
     if (cpAttrs['@_rowSpan']) rowspan = Math.max(rowspan, parseInt(cpAttrs['@_rowSpan'], 10));
   }
 
-  // 셀 내 단락
+  // 셀 내 단락 — tc > p 또는 tc > subList > p 모두 탐색
+  const pNodes = [];
   for (const child of tcChildren) {
     if (child['p'] !== undefined) {
-      if (runs.length > 0) runs.push({ text: '\n', bold: false });
-      const pBlock = _parseParagraph(child, header);
-      if (pBlock && pBlock.runs) {
-        for (const r of pBlock.runs) runs.push(r);
+      pNodes.push(child);
+    } else if (child['subList'] !== undefined) {
+      const subChildren = child['subList'] || [];
+      for (const sc of subChildren) {
+        if (sc['p'] !== undefined) pNodes.push(sc);
       }
+    }
+  }
+  for (const pNode of pNodes) {
+    if (runs.length > 0) runs.push({ text: '\n', bold: false });
+    const pBlock = _parseParagraph(pNode, header);
+    if (pBlock && pBlock.runs) {
+      for (const r of pBlock.runs) runs.push(r);
     }
   }
 
