@@ -406,7 +406,7 @@ export function TableEditModal({ block }: Props) {
   })()
 
   return (
-    <Modal onClose={close} width="880px" height="720px">
+    <Modal onClose={close} width="880px" height="85vh">
         <ModalHeader title="표 편집" subtitle={`${rowCount} × ${colCount}${cellInfoText ? `  —  ${cellInfoText}` : ''}`}
           onClose={close} onApply={apply} />
 
@@ -506,7 +506,7 @@ export function TableEditModal({ block }: Props) {
           </div>
 
           {/* 인스펙터 패널 */}
-          <div className="w-[220px] shrink-0 overflow-y-auto border-l border-app-border p-3 space-y-3">
+          <div className="w-[220px] shrink-0 overflow-y-auto border-l border-app-border p-3 space-y-3 min-h-0">
             {/* 선 설정 */}
             <div>
               <div className="text-[10px] font-semibold text-app-muted uppercase tracking-wider mb-2">선</div>
