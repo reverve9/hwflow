@@ -37,21 +37,32 @@ function BorderIcon({ preset }: { preset: BorderPreset }) {
   const ih = flags.innerH
   const iv = flags.innerV
 
-  const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => (
-    <line x1={x1} y1={y1} x2={x2} y2={y2}
-      className={active ? 'stroke-blue-500' : 'stroke-gray-300'}
-      strokeWidth={active ? '1' : '0.7'}
-      strokeDasharray={active ? undefined : '2,2'} />
-  )
+  const isNone = preset === 'none'
+
+  const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => {
+    if (isNone) return null // "없음"은 선 자체 안 보임
+    return (
+      <line x1={x1} y1={y1} x2={x2} y2={y2}
+        className={active ? 'stroke-blue-500' : 'stroke-gray-300'}
+        strokeWidth={active ? '1' : '0.7'}
+        strokeDasharray={active ? undefined : '2,2'} />
+    )
+  }
 
   return (
     <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} className="block">
-      <Line x1={p} y1={p} x2={s-p} y2={p} active={t} />
-      <Line x1={p} y1={s-p} x2={s-p} y2={s-p} active={b} />
-      <Line x1={p} y1={p} x2={p} y2={s-p} active={l} />
-      <Line x1={s-p} y1={p} x2={s-p} y2={s-p} active={r} />
-      <Line x1={p} y1={m} x2={s-p} y2={m} active={ih} />
-      <Line x1={m} y1={p} x2={m} y2={s-p} active={iv} />
+      {isNone ? (
+        <text x={m} y={m + 1} textAnchor="middle" dominantBaseline="middle" className="fill-gray-300" fontSize="10">∅</text>
+      ) : (
+        <>
+          <Line x1={p} y1={p} x2={s-p} y2={p} active={t} />
+          <Line x1={p} y1={s-p} x2={s-p} y2={s-p} active={b} />
+          <Line x1={p} y1={p} x2={p} y2={s-p} active={l} />
+          <Line x1={s-p} y1={p} x2={s-p} y2={s-p} active={r} />
+          <Line x1={p} y1={m} x2={s-p} y2={m} active={ih} />
+          <Line x1={m} y1={p} x2={m} y2={s-p} active={iv} />
+        </>
+      )}
     </svg>
   )
 }
@@ -411,9 +422,9 @@ export function TableEditModal({ block }: Props) {
                             onClick={e => { e.stopPropagation(); selectCell(r, c, e.shiftKey) }}
                             onDoubleClick={e => { e.stopPropagation(); selectCell(r, c, false); setEditingCell({ row: r, col: c }) }}
                           >
-                            {borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.top) }} />}
+                            {r === 0 && borders.top.type !== 'NONE' && <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.top) }} />}
                             {borders.bottom.type !== 'NONE' && <div className="absolute bottom-0 left-0 right-0 bg-black/60" style={{ height: bdrW(borders.bottom) }} />}
-                            {borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
+                            {c === 0 && borders.left.type !== 'NONE' && <div className="absolute top-0 left-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.left) }} />}
                             {borders.right.type !== 'NONE' && <div className="absolute top-0 right-0 bottom-0 bg-black/60" style={{ width: bdrW(borders.right) }} />}
 
                             {/* 병합 표시 */}
