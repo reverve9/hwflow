@@ -184,10 +184,9 @@ export function StyleManager() {
           }
         />
         {/* 프리셋 바 */}
-        <div className="flex items-center gap-2 px-5 py-2 border-b border-app-border/50 shrink-0">
-          <span className="text-[11px] text-app-muted">프리셋:</span>
+        <div className="flex items-center gap-1.5 px-5 py-2 border-b border-app-border/50 shrink-0">
           <select value={selectedPreset} onChange={e => setSelectedPreset(e.target.value)}
-            className={`${selectClass} w-auto`}>
+            className={`${selectClass} w-auto max-w-[140px]`}>
             {availablePresets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <button onClick={handleNewPreset} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="새 프리셋">
