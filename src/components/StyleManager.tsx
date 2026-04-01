@@ -38,13 +38,16 @@ export function StyleManager() {
 
     const loaded: EditableStyle[] = []
     const ps = preset.paragraph_styles ?? {}
+    const defaultStyle: ParagraphStyleData = {
+      font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify',
+      indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0, line_height_percent: 160,
+    }
     for (const key of BUILTIN_KEYS) {
-      if (ps[key]) {
-        loaded.push({
-          id: key, key, displayName: ps[key].display_name ?? STYLE_LABELS[key] ?? key,
-          data: { ...ps[key] }, isBuiltin: true,
-        })
-      }
+      const data = ps[key] ?? { ...defaultStyle }
+      loaded.push({
+        id: key, key, displayName: data.display_name ?? STYLE_LABELS[key] ?? key,
+        data: { ...data }, isBuiltin: true,
+      })
     }
     for (const [key, data] of Object.entries(ps)) {
       if (!BUILTIN_KEYS.includes(key)) {
