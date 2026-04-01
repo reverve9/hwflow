@@ -12,6 +12,7 @@ import { StyleManager } from '@/components/StyleManager'
 import { PreviewWindow } from '@/components/PreviewWindow'
 import { SettingsModal } from '@/components/SettingsModal'
 import { LoginPage } from '@/components/LoginPage'
+import { AdminPanel } from '@/components/AdminPanel'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { loadSettings, saveDraft, loadDraft, hasDraft, formatDraftTime } from '@/lib/autosave'
 import { logout, getProfile, onAuthChange } from '@/lib/auth'
@@ -45,6 +46,7 @@ export default function App() {
 
   const [showPreviewWindow, setShowPreviewWindow] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
   const [draftBanner, setDraftBanner] = useState<string | null>(null)
   useKeyboardShortcuts()
 
@@ -128,7 +130,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-app-bg">
-      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)} />
+      <Toolbar onOpenPreviewWindow={() => setShowPreviewWindow(true)} onOpenSettings={() => setShowSettings(true)}
+        isAdmin={profile?.role === 'admin'} onOpenAdmin={() => setShowAdmin(true)} />
 
       {/* 임시저장 복원 배너 */}
       {draftBanner && (
@@ -187,6 +190,7 @@ export default function App() {
       )}
       {showStyleSettings && <StyleManager />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onLogout={async () => { setShowSettings(false); await logout(); setProfile(null); setAuthed(false) }} />}
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
 
       {/* 새 창 미리보기 */}
       {showPreviewWindow && hasBlocks && (

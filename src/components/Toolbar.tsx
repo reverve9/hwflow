@@ -2,7 +2,10 @@ import { useAppStore } from '@/store/useAppStore'
 import type { InputMode } from '@/store/types'
 import { saveProjectFile, openProjectFile } from '@/lib/projectFile'
 
-export function Toolbar({ onOpenPreviewWindow, onOpenSettings }: { onOpenPreviewWindow: () => void; onOpenSettings: () => void }) {
+export function Toolbar({ onOpenPreviewWindow, onOpenSettings, isAdmin, onOpenAdmin }: {
+  onOpenPreviewWindow: () => void; onOpenSettings: () => void
+  isAdmin?: boolean; onOpenAdmin?: () => void
+}) {
   const {
     inputMode, setInputMode, selectedPreset, setSelectedPreset,
     availablePresets, documentTitle, setDocumentTitle,
@@ -138,6 +141,19 @@ export function Toolbar({ onOpenPreviewWindow, onOpenSettings }: { onOpenPreview
             d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
         </svg>
       </button>
+
+      {/* 관리자 */}
+      {isAdmin && (
+        <button
+          onClick={onOpenAdmin}
+          className="p-1.5 rounded-md text-app-muted hover:bg-navy-50 hover:text-navy-600 transition-colors"
+          title="관리자"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+        </button>
+      )}
 
       {/* 설정 */}
       <button
