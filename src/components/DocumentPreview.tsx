@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, ParagraphStyleData } from '@/store/types'
 
@@ -19,6 +19,15 @@ export function DocumentPreview() {
 
   const [showOriginal, setShowOriginal] = useState(false)
   const hasOriginalStyle = irBlocks.some(b => b.originalStyle)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const anchorBlockID = useAppStore(s => s.anchorBlockID)
+
+  // 블록 선택 시 미리보기 스크롤 동기화
+  useEffect(() => {
+    if (!anchorBlockID || !scrollContainerRef.current) return
+    const el = scrollContainerRef.current.querySelector(`[data-preview-block="${anchorBlockID}"]`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [anchorBlockID])
 
   const preset = getPresetData()
   const marginTop = (preset?.page.margin.top_mm ?? 20) * MM_TO_PX
@@ -61,7 +70,19 @@ export function DocumentPreview() {
     if (block.type === 'image' || eType === 'image') return 100
     if (block.isTable) {
       const rows = effectiveTableRows(block)
-      return Math.max(rows.length, 1) * 28 + 8
+      // 각 행의 최대 셀 텍스트 줄 수로 높이 추정
+      let totalH = 8
+      for (const row of rows) {
+        let maxLines = 1
+        for (const cell of row) {
+          if (cell.merged) continue
+          const text = cell.runs.map(r => r.text).join('')
+          const lines = Math.max(text.split('\n').length, Math.ceil(text.length / 20) || 1)
+          if (lines > maxLines) maxLines = lines
+        }
+        totalH += maxLines * 20 + 8
+      }
+      return totalH
     }
     const style = resolveStyle(block, eType)
     const fontSizePx = style.size_pt * PT_TO_PX
@@ -230,7 +251,7 @@ export function DocumentPreview() {
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#eeeeee] p-6 relative">
+    <div ref={scrollContainerRef} className="h-full overflow-auto bg-[#eeeeee] p-6 relative">
       {hasOriginalStyle && (
         <div className="sticky top-0 z-10 flex justify-end pr-2 pb-2 pointer-events-none">
           <div className="inline-flex rounded-md border border-app-border text-[11px] overflow-hidden shadow-md pointer-events-auto bg-white/90 backdrop-blur-sm">
@@ -258,7 +279,7 @@ export function DocumentPreview() {
                 const eType = effectiveType(block)
                 const isSelected = selectedBlockIDs.has(block.id)
                 return (
-                  <div key={block.id} className={`relative ${isSelected ? 'bg-navy-100/40 rounded-sm' : ''}`}>
+                  <div key={block.id} data-preview-block={block.id} className={`relative ${isSelected ? 'bg-navy-100/40 rounded-sm' : ''}`}>
                     {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[2.5px] rounded-r bg-navy-500" />}
                     {block.type === 'image' || eType === 'image'
                       ? renderImagePlaceholder(block)
