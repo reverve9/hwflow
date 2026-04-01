@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import type { IRBlock, IRTableCell, ParagraphStyleData } from '@/store/types'
 
@@ -17,6 +17,9 @@ export function DocumentPreview() {
     blockOverrides, getPresetData, presetVersion,
   } = useAppStore()
 
+  const [showOriginal, setShowOriginal] = useState(false)
+  const hasOriginalStyle = irBlocks.some(b => b.originalStyle)
+
   const preset = getPresetData()
   const marginTop = (preset?.page.margin.top_mm ?? 20) * MM_TO_PX
   const marginBottom = (preset?.page.margin.bottom_mm ?? 15) * MM_TO_PX
@@ -25,13 +28,26 @@ export function DocumentPreview() {
   const tableHeadColor = preset?.colors?.table_head ?? '#D8D8D8'
 
   const resolveStyle = (block: IRBlock, eType: string): ParagraphStyleData => {
+    // 원본 모드: originalStyle이 있으면 그것으로 렌더링
+    if (showOriginal && block.originalStyle) {
+      const os = block.originalStyle
+      return {
+        font: os.font ?? 'HCR Batang',
+        size_pt: os.size_pt ?? 10,
+        bold: os.bold ?? false,
+        align: (os.align as ParagraphStyleData['align']) ?? 'justify',
+        indent_left_hwpunit: os.indent_left_hwpunit ?? 0,
+        space_before_hwpunit: os.space_before_hwpunit ?? 0,
+        space_after_hwpunit: os.space_after_hwpunit ?? 0,
+        line_height_percent: os.line_height_percent ?? 160,
+      }
+    }
     if (blockOverrides[block.id]) return blockOverrides[block.id].style
     const base = preset?.paragraph_styles[eType] ?? {
       font: 'HCR Batang', size_pt: 10, bold: false, align: 'justify',
       indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0,
       line_height_percent: 160,
     }
-    // 파싱된 단락 스타일 오버라이드
     return {
       ...base,
       ...(block.align && { align: block.align }),
@@ -215,6 +231,20 @@ export function DocumentPreview() {
 
   return (
     <div className="h-full overflow-auto bg-[#eeeeee] p-6">
+      {hasOriginalStyle && (
+        <div className="flex justify-center mb-3">
+          <div className="inline-flex rounded-md border border-app-border text-[11px] overflow-hidden shadow-sm">
+            <button onClick={() => setShowOriginal(false)}
+              className={`px-3 py-1 transition-colors ${!showOriginal ? 'bg-navy-600 text-white' : 'bg-white text-navy-700 hover:bg-navy-50'}`}>
+              적용 스타일
+            </button>
+            <button onClick={() => setShowOriginal(true)}
+              className={`px-3 py-1 border-l border-app-border transition-colors ${showOriginal ? 'bg-navy-600 text-white' : 'bg-white text-navy-700 hover:bg-navy-50'}`}>
+              원본 스타일
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col items-center gap-4">
         {pages.map((pageBlocks, pageIdx) => (
           <div key={pageIdx}>

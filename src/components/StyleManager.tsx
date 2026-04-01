@@ -157,6 +157,23 @@ export function StyleManager() {
     setTimeout(() => setSaveMessage(''), 2000)
   }
 
+  const handleRenamePreset = () => {
+    const key = `hwflow_preset_${selectedPreset}`
+    const raw = localStorage.getItem(key)
+    if (!raw) { setSaveMessage('이름을 변경할 수 없는 프리셋입니다'); setTimeout(() => setSaveMessage(''), 2000); return }
+    const current = availablePresets.find(p => p.id === selectedPreset)?.name ?? selectedPreset
+    const name = prompt('프리셋 이름:', current)
+    if (!name?.trim() || name.trim() === current) return
+    try {
+      const data = JSON.parse(raw)
+      data.meta = { ...(data.meta ?? {}), name: name.trim() }
+      localStorage.setItem(key, JSON.stringify(data))
+      reloadPresets()
+      setSaveMessage('이름 변경 완료')
+      setTimeout(() => setSaveMessage(''), 2000)
+    } catch {}
+  }
+
   const handleExport = () => {
     const preset = getPresetData()
     if (!preset) return
@@ -215,6 +232,11 @@ export function StyleManager() {
           <button onClick={handleDeletePreset} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="프리셋 삭제">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+            </svg>
+          </button>
+          <button onClick={handleRenamePreset} className="text-[11px] text-app-muted hover:text-navy-600 transition-colors" title="이름 변경">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
             </svg>
           </button>
           <div className="flex-1" />
