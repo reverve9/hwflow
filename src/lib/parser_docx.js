@@ -69,15 +69,23 @@ export function parseDocx(base64Data) {
   const decoder = _getDecoder();
   const docXmlStr = decoder(docXmlBytes);
 
+  // word/theme/theme1.xml에서 테마 폰트 추출
+  const themeFonts = { major: {}, minor: {} };
+  const themeBytes = files['word/theme/theme1.xml'];
+  if (themeBytes) {
+    _parseThemeFonts(decoder(themeBytes), themeFonts);
+  }
+
   // word/styles.xml에서 스타일 ID → 이름/속성 매핑 구축
   const styleIdToName = {};
   const styleIdToProps = {};
+  const docDefaults = {};
   const stylesXmlBytes = files['word/styles.xml'];
   if (stylesXmlBytes) {
-    _buildStyleIdMap(decoder(stylesXmlBytes), styleIdToName, styleIdToProps);
+    _buildStyleIdMap(decoder(stylesXmlBytes), styleIdToName, styleIdToProps, docDefaults, themeFonts);
   }
 
-  const orderedBlocks = _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps);
+  const orderedBlocks = _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps, docDefaults);
   return orderedBlocks;
 }
 
@@ -85,7 +93,7 @@ export function parseDocx(base64Data) {
 /**
  * preserveOrder 모드로 body를 파싱하여 요소 순서를 유지한다.
  */
-function _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps) {
+function _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps, docDefaults) {
   const parser = new XMLParser({
     ...xmlParserOptions,
     preserveOrder: true,
@@ -102,7 +110,7 @@ function _parseBodyOrdered(docXmlStr, styleIdToName, styleIdToProps) {
 
   for (const child of bodyChildren) {
     if (child['w:p'] !== undefined) {
-      const block = _parseParagraphOrdered(child, styleIdToName, styleIdToProps);
+      const block = _parseParagraphOrdered(child, styleIdToName, styleIdToProps, docDefaults);
       if (block) blocks.push(block);
     } else if (child['w:tbl'] !== undefined) {
       const block = _parseTableOrdered(child, styleIdToName);
@@ -121,7 +129,7 @@ function _findOrdered(arr, tagName) {
   return null;
 }
 
-function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps) {
+function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps, docDefaults) {
   const pChildren = pNode['w:p'] || [];
   let irType = 'body';
   let styleId = '';
@@ -205,14 +213,15 @@ function _parseParagraphOrdered(pNode, styleIdToName, styleIdToProps) {
     return { type: 'image', runs: [{ text: '이미지', bold: false }] };
   }
 
-  // 원본 스타일 구성: 단락 rPr → 런 → styles.xml 순으로 fallback
+  // 원본 스타일 구성: 단락 rPr → 런 → styles.xml → docDefaults 순으로 fallback
   const firstRun = runs[0];
   const sp = (styleIdToProps || {})[styleId] || {};
-  const origFont = pprFont || (firstRun && firstRun._font) || sp.font || null;
-  const origSize = pprSize || (firstRun && firstRun._size) || sp.size || 0;
+  const dd = docDefaults || {};
+  const origFont = pprFont || (firstRun && firstRun._font) || sp.font || dd.font || null;
+  const origSize = pprSize || (firstRun && firstRun._size) || sp.size || dd.size || 0;
   const origBold = pprBold || (firstRun && firstRun.bold) || sp.bold || false;
   const origAlign = align || sp.align || null;
-  const origLineHeight = lineHeight || sp.lineHeight || 0;
+  const origLineHeight = lineHeight || sp.lineHeight || dd.lineHeight || 0;
 
   // 런에서 내부 필드 제거
   for (const r of runs) { delete r._font; delete r._size; }
@@ -368,10 +377,47 @@ function _parseCellOrdered(tcNode, styleIdToName) {
 }
 
 
+/** theme1.xml에서 major/minor 폰트 추출 */
+function _parseThemeFonts(themeXml, out) {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+    removeNSPrefix: true,
+  });
+  const parsed = parser.parse(themeXml);
+  const fontScheme = _dig(parsed, 'theme', 'themeElements', 'fontScheme');
+  if (!fontScheme) return;
+  for (const key of ['majorFont', 'minorFont']) {
+    const node = fontScheme[key];
+    if (!node) continue;
+    const target = key === 'majorFont' ? out.major : out.minor;
+    // ea (East Asian) 폰트
+    if (node.ea) target.ea = node.ea['@_typeface'] || '';
+    // latin 폰트
+    if (node.latin) target.latin = node.latin['@_typeface'] || '';
+  }
+}
+
+/** 테마 참조를 실제 폰트명으로 변환 */
+function _resolveThemeFont(rFonts, themeFonts) {
+  if (!rFonts) return null;
+  // 직접 폰트명 먼저
+  const direct = rFonts['@_w:eastAsia'] || rFonts['@_w:ascii'] || rFonts['@_w:hAnsi'];
+  if (direct) return direct;
+  // 테마 참조 해석
+  const eaTheme = rFonts['@_w:eastAsiaTheme'] || '';
+  const asciiTheme = rFonts['@_w:asciiTheme'] || '';
+  if (eaTheme.includes('major')) return themeFonts.major.ea || themeFonts.major.latin || null;
+  if (eaTheme.includes('minor')) return themeFonts.minor.ea || themeFonts.minor.latin || null;
+  if (asciiTheme.includes('major')) return themeFonts.major.latin || null;
+  if (asciiTheme.includes('minor')) return themeFonts.minor.latin || null;
+  return null;
+}
+
 /**
  * word/styles.xml에서 스타일 ID → 이름 매핑 + 스타일 속성(폰트/크기/줄간격) 추출
  */
-function _buildStyleIdMap(stylesXml, nameMap, propsMap) {
+function _buildStyleIdMap(stylesXml, nameMap, propsMap, docDefaults, themeFonts) {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
@@ -379,6 +425,28 @@ function _buildStyleIdMap(stylesXml, nameMap, propsMap) {
     isArray: (name) => ['w:style'].includes(name),
   });
   const parsed = parser.parse(stylesXml);
+
+  // 문서 기본값 (w:docDefaults)
+  const dd = _dig(parsed, 'w:styles', 'w:docDefaults');
+  if (dd) {
+    const rPrDef = _dig(dd, 'w:rPrDefault', 'w:rPr');
+    if (rPrDef) {
+      const rFonts = rPrDef['w:rFonts'];
+      docDefaults.font = _resolveThemeFont(rFonts, themeFonts);
+      const sz = rPrDef['w:sz'];
+      if (sz && sz['@_w:val']) docDefaults.size = parseInt(sz['@_w:val'], 10) / 2;
+    }
+    const pPrDef = _dig(dd, 'w:pPrDefault', 'w:pPr');
+    if (pPrDef) {
+      const sp = pPrDef['w:spacing'];
+      if (sp) {
+        const line = parseInt(sp['@_w:line'] || '0', 10);
+        const lineRule = sp['@_w:lineRule'] || 'auto';
+        if (line && lineRule === 'auto') docDefaults.lineHeight = Math.round(line / 240 * 100);
+      }
+    }
+  }
+
   const styles = _dig(parsed, 'w:styles', 'w:style') || [];
   for (const style of styles) {
     const id = style['@_w:styleId'] || '';
@@ -391,7 +459,7 @@ function _buildStyleIdMap(stylesXml, nameMap, propsMap) {
     const rPr = style['w:rPr'];
     if (rPr) {
       const rFonts = rPr['w:rFonts'];
-      if (rFonts) props.font = rFonts['@_w:eastAsia'] || rFonts['@_w:ascii'] || rFonts['@_w:hAnsi'] || null;
+      props.font = _resolveThemeFont(rFonts, themeFonts);
       const sz = rPr['w:sz'];
       if (sz && sz['@_w:val']) props.size = parseInt(sz['@_w:val'], 10) / 2;
       if (rPr['w:b'] !== undefined) props.bold = true;
@@ -411,6 +479,9 @@ function _buildStyleIdMap(stylesXml, nameMap, propsMap) {
         if (line && lineRule === 'auto') props.lineHeight = Math.round(line / 240 * 100);
       }
     }
+    // font 없으면 docDefaults에서 가져오기
+    if (!props.font && docDefaults.font) props.font = docDefaults.font;
+    if (!props.size && docDefaults.size) props.size = docDefaults.size;
     if (id && Object.keys(props).length > 0) propsMap[id] = props;
   }
 }
