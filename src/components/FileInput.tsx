@@ -74,6 +74,8 @@ export function FileInput() {
       onDragLeave={() => setIsDragging(false)}
       onDrop={onDrop}
     >
+      <p className="text-[11px] text-navy-400/70 tracking-tight">모든 문서는 사용자의 로컬에만 저장됩니다. 안심하고 사용하세요.</p>
+
       <div className={`w-full max-w-md p-12 rounded-lg border-2 border-dashed transition-colors text-center ${
         isDragging ? 'border-navy-400 bg-navy-50' : 'border-app-border bg-app-surface'
       }`}>
@@ -83,8 +85,7 @@ export function FileInput() {
         </svg>
         <p className="text-base text-navy-400 mb-1">파일을 드래그하거나 클릭하여 선택</p>
         <p className="text-sm text-app-muted">.docx, .md, .txt, .pdf</p>
-        <p className="text-[10px] text-app-muted mb-1">PDF는 Chrome/Edge 브라우저에서만 지원됩니다</p>
-        <p className="text-[10px] text-navy-400/60 mb-4">모든 문서 원문과 변환된 문서는 사용자의 로컬에만 저장됩니다.<br/>안심하고 사용하세요.</p>
+        <p className="text-[10px] text-app-muted mb-4">PDF는 Chrome/Edge 브라우저에서만 지원됩니다</p>
         <button
           onClick={() => fileRef.current?.click()}
           className="px-4 py-2 rounded-lg border border-app-border bg-app-surface text-[13px] text-navy-600 hover:bg-navy-50 transition-colors"
