@@ -39,6 +39,7 @@ export function FileInput() {
       let blocks: Record<string, unknown>[]
 
       if (ext === 'hwpx') {
+        // @ts-ignore
         const { parseHwpx } = await import('@/lib/parser_hwpx')
         const arrayBuffer = await file.arrayBuffer()
         blocks = parseHwpx(arrayBuffer) as Record<string, unknown>[]

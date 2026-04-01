@@ -427,70 +427,51 @@ function StyleEditForm({ style, onUpdate, onRename, onKeyChange }: {
 }
 
 function MappingPanel({ styles }: { styles: EditableStyle[] }) {
-  const { styleMapping, setStyleMapping } = useAppStore()
-  const mapping = { ...styleMapping }
-  const activeKeys = Object.keys(mapping).filter(k => mapping[k] && mapping[k] !== k)
-  const availableKeys = PARSER_KEYS.filter(k => !activeKeys.includes(k))
+  const { styleMapping, setStyleMapping, irBlocks } = useAppStore()
 
-  const handleAdd = () => {
-    if (availableKeys.length === 0) return
-    const key = availableKeys[0]
-    // 기본값과 다른 첫 번째 스타일로 매핑
-    const target = styles.find(s => s.key !== key)?.key ?? key
-    setStyleMapping({ ...mapping, [key]: target })
-  }
+  // 파싱된 블록에서 실제 사용된 타입 추출 (table, image 제외)
+  const parsedTypes = [...new Set(irBlocks.map(b => b.type).filter(t => !['table', 'image'].includes(t)))]
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-[13px] font-semibold text-navy-800">스타일 매핑</div>
-          <p className="text-[11px] text-app-muted mt-1">파서가 판단한 스타일을 다른 스타일로 변환합니다.</p>
-        </div>
-        <button onClick={handleAdd} disabled={availableKeys.length === 0}
-          className="text-[11px] px-2.5 py-1 rounded-md bg-navy-600 text-white hover:bg-navy-700 disabled:opacity-30 transition-colors">
-          + 추가
-        </button>
+      <div>
+        <div className="text-[13px] font-semibold text-navy-800">스타일 매핑</div>
+        <p className="text-[11px] text-app-muted mt-1">파서가 판단한 스타일을 다른 스타일로 변환합니다.</p>
       </div>
 
-      {activeKeys.length === 0 ? (
+      {parsedTypes.length === 0 ? (
         <div className="bg-white rounded-lg border border-app-border p-6 text-center">
-          <p className="text-[11px] text-app-muted">설정된 매핑이 없습니다.</p>
-          <p className="text-[10px] text-app-muted mt-1">다른 양식의 스타일을 내 프리셋으로 변환할 때 사용합니다.</p>
+          <p className="text-[11px] text-app-muted">파싱된 문서가 없습니다.</p>
+          <p className="text-[10px] text-app-muted mt-1">문서를 불러오면 사용된 스타일이 여기에 표시됩니다.</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-app-border p-4 space-y-3">
-          {activeKeys.map(key => (
+          {parsedTypes.map(key => (
             <div key={key} className="flex items-center gap-3">
-              <select value={key} onChange={e => {
-                const next = { ...mapping }
-                const val = next[key]
-                delete next[key]
-                next[e.target.value] = val
-                setStyleMapping(next)
-              }} className={`${selectClass} w-[120px]`}>
-                {PARSER_KEYS.map(k => <option key={k} value={k} disabled={k !== key && activeKeys.includes(k)}>{STYLE_LABELS[k] ?? k}</option>)}
-              </select>
+              <span className="text-[11px] text-navy-700 w-[120px] shrink-0">{STYLE_LABELS[key] ?? key}</span>
               <span className="text-app-muted">→</span>
-              <select value={mapping[key] ?? key} onChange={e => {
-                const next = { ...mapping }
-                next[key] = e.target.value
+              <select value={styleMapping[key] ?? key} onChange={e => {
+                const val = e.target.value
+                const next = { ...styleMapping }
+                if (val === key) delete next[key]; else next[key] = val
                 setStyleMapping(next)
               }} className={`${selectClass} flex-1`}>
                 {styles.map(s => <option key={s.key} value={s.key}>{s.displayName}</option>)}
               </select>
-              <button onClick={() => { const next = { ...mapping }; delete next[key]; setStyleMapping(next) }}
-                className="p-1 rounded hover:bg-red-50 transition-colors">
-                <svg className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {styleMapping[key] && styleMapping[key] !== key && (
+                <button onClick={() => { const next = { ...styleMapping }; delete next[key]; setStyleMapping(next) }}
+                  className="p-1 rounded hover:bg-red-50 transition-colors" title="기본값으로 초기화">
+                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {activeKeys.length > 0 && (
+      {Object.keys(styleMapping).length > 0 && (
         <button onClick={() => setStyleMapping({})}
           className="text-[11px] text-app-muted hover:text-red-500 transition-colors">
           모든 매핑 초기화
