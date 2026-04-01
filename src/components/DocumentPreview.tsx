@@ -178,7 +178,16 @@ export function DocumentPreview() {
                           textAlign: cell.align,
                           fontFamily: (style?.font ?? '함초롬바탕') + ', serif',
                         }}>
-                          {cell.runs.map((r, i) => <span key={i}>{r.text}</span>)}
+                          {cell.runs.map((r, i) => {
+                            if (r.text === '\n') return <br key={i} />
+                            const parts = r.text.split('\n')
+                            return parts.map((part, pi) => (
+                              <span key={`${i}-${pi}`}>
+                                {pi > 0 && <br />}
+                                <span style={{ fontWeight: r.bold ? 'bold' : undefined }}>{part}</span>
+                              </span>
+                            ))
+                          })}
                           {cell.runs.length === 0 && '\u00A0'}
                         </div>
                       </td>

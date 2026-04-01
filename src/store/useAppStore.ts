@@ -88,32 +88,9 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
   }
 }
 
-/** 파싱된 블록 배열을 IR로 변환. 1×1 표는 셀 텍스트를 개별 블록으로 분해 */
+/** 파싱된 블록 배열을 IR로 변환 */
 export function irBlocksFromDicts(dicts: Record<string, unknown>[]): IRBlock[] {
-  const result: IRBlock[] = []
-  for (const dict of dicts) {
-    const type = (dict.type as string) ?? 'body'
-    if (type === 'table') {
-      const rows = dict.rows as unknown[][] | undefined
-      if (rows && rows.length === 1 && rows[0].length === 1) {
-        // 1×1 표 → 셀 내용을 개별 블록으로 풀기
-        const cell = rows[0][0] as Record<string, unknown>
-        const cellRuns = (cell.runs as Array<{ text: string; bold?: boolean }>) ?? []
-        const fullText = cellRuns.map(r => r.text ?? '').join('')
-        const lines = fullText.split('\n')
-        for (const line of lines) {
-          result.push({
-            id: uid(), type: 'body', text: line,
-            runs: [{ text: line, bold: cellRuns[0]?.bold ?? false }],
-            isTable: false, tableRows: [], hasHeader: false,
-          })
-        }
-        continue
-      }
-    }
-    result.push(irBlockFromDict(dict))
-  }
-  return result
+  return dicts.map(b => irBlockFromDict(b))
 }
 
 function parseBorders(bd?: Record<string, Record<string, string>>): IRTableCell['borders'] {

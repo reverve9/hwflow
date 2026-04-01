@@ -640,16 +640,39 @@ export class HwpxWriter {
         if (cellRuns.length === 0) {
           cellRuns = [{ text: cell.text || '', bold: cell.bold || false }];
         }
+        // \n을 기준으로 여러 <hp:p>로 분할
+        const paragraphs = [[]];
         for (const cr of cellRuns) {
-          let crCpr = cellCpr;
-          if (cr.bold && !isHeaderRow) {
-            crCpr = this._charPrMap.emphasis || cellCpr;
+          if (cr.text === '\n') {
+            paragraphs.push([]);
+          } else {
+            const parts = (cr.text || '').split('\n');
+            for (let pi = 0; pi < parts.length; pi++) {
+              if (pi > 0) paragraphs.push([]);
+              if (parts[pi]) paragraphs[paragraphs.length - 1].push({ text: parts[pi], bold: cr.bold });
+            }
           }
-          xml += `<hp:run charPrIDRef="${crCpr}">`;
-          xml += `<hp:t>${escapeXml(cr.text || '')}</hp:t>`;
-          xml += '</hp:run>';
+        }
+        // 첫 번째 단락은 이미 열린 <hp:p>에 작성
+        for (const cr of paragraphs[0]) {
+          let crCpr = cellCpr;
+          if (cr.bold && !isHeaderRow) crCpr = this._charPrMap.emphasis || cellCpr;
+          xml += `<hp:run charPrIDRef="${crCpr}"><hp:t>${escapeXml(cr.text)}</hp:t></hp:run>`;
         }
         xml += '</hp:p>';
+        // 나머지 단락 (셀 내 줄바꿈)
+        for (let pIdx = 1; pIdx < paragraphs.length; pIdx++) {
+          xml += `<hp:p id="${randomId()}" paraPrIDRef="${cellPpr}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">`;
+          for (const cr of paragraphs[pIdx]) {
+            let crCpr = cellCpr;
+            if (cr.bold && !isHeaderRow) crCpr = this._charPrMap.emphasis || cellCpr;
+            xml += `<hp:run charPrIDRef="${crCpr}"><hp:t>${escapeXml(cr.text)}</hp:t></hp:run>`;
+          }
+          if (paragraphs[pIdx].length === 0) {
+            xml += `<hp:run charPrIDRef="${cellCpr}"><hp:t></hp:t></hp:run>`;
+          }
+          xml += '</hp:p>';
+        }
         xml += '</hp:subList>';
         xml += `<hp:cellAddr colAddr="${cIdx}" rowAddr="${rIdx}"/>`;
         xml += `<hp:cellSpan colSpan="${cs}" rowSpan="${rs}"/>`;
