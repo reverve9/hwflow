@@ -140,18 +140,46 @@ function _findOrdered(arr, tagName) {
 function _parseParagraphOrdered(pNode, styleIdToName) {
   const pChildren = pNode['w:p'] || [];
   let irType = 'body';
+  let align = null;
+  let indentLeft = 0;
+  let spaceBefore = 0;
+  let spaceAfter = 0;
   const runs = [];
   let hasImage = false;
 
   for (const child of pChildren) {
     if (child['w:pPr'] !== undefined) {
-      // 단락 속성에서 스타일 추출
       const pPrChildren = child['w:pPr'] || [];
+      // 스타일
       const pStyleNode = _findOrdered(pPrChildren, 'w:pStyle');
       if (pStyleNode) {
         const attrs = pStyleNode[':@'] || {};
         const styleId = attrs['@_w:val'] || '';
         irType = _mapStyle(styleId, styleIdToName);
+      }
+      // 정렬 (w:jc)
+      const jcNode = _findOrdered(pPrChildren, 'w:jc');
+      if (jcNode) {
+        const val = (jcNode[':@'] || {})['@_w:val'] || '';
+        const map = { left: 'left', center: 'center', right: 'right', both: 'justify', justify: 'justify' };
+        align = map[val] || null;
+      }
+      // 들여쓰기 (w:ind)
+      const indNode = _findOrdered(pPrChildren, 'w:ind');
+      if (indNode) {
+        const attrs = indNode[':@'] || {};
+        // Word twips (1/20 pt) → HWP unit (1/100 pt): twips / 20 * 100 = twips * 5
+        const left = parseInt(attrs['@_w:left'] || '0', 10);
+        if (left) indentLeft = left * 5;
+      }
+      // 단락 간격 (w:spacing)
+      const spNode = _findOrdered(pPrChildren, 'w:spacing');
+      if (spNode) {
+        const attrs = spNode[':@'] || {};
+        const before = parseInt(attrs['@_w:before'] || '0', 10);
+        const after = parseInt(attrs['@_w:after'] || '0', 10);
+        if (before) spaceBefore = before * 5;
+        if (after) spaceAfter = after * 5;
       }
     } else if (child['w:r'] !== undefined) {
       // 이미지 감지 (w:r 내 w:drawing 또는 w:pict)
@@ -172,7 +200,12 @@ function _parseParagraphOrdered(pNode, styleIdToName) {
     return { type: 'image', runs: [{ text: '이미지', bold: false }] };
   }
 
-  return { type: irType, runs: runs.length > 0 ? runs : [{ text: '', bold: false }] };
+  const result = { type: irType, runs: runs.length > 0 ? runs : [{ text: '', bold: false }] };
+  if (align) result.align = align;
+  if (indentLeft) result.indent_left_hwpunit = indentLeft;
+  if (spaceBefore) result.space_before_hwpunit = spaceBefore;
+  if (spaceAfter) result.space_after_hwpunit = spaceAfter;
+  return result;
 }
 
 function _parseRunOrdered(rNode) {

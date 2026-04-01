@@ -77,7 +77,7 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
     }
   }
 
-  return {
+  const block: IRBlock = {
     id: uid(),
     type,
     text,
@@ -86,6 +86,11 @@ export function irBlockFromDict(dict: Record<string, unknown>): IRBlock {
     tableRows,
     hasHeader,
   }
+  if (dict.align) block.align = dict.align as IRBlock['align']
+  if (dict.indent_left_hwpunit) block.indent_left_hwpunit = dict.indent_left_hwpunit as number
+  if (dict.space_before_hwpunit) block.space_before_hwpunit = dict.space_before_hwpunit as number
+  if (dict.space_after_hwpunit) block.space_after_hwpunit = dict.space_after_hwpunit as number
+  return block
 }
 
 /** 파싱된 블록 배열을 IR로 변환 */

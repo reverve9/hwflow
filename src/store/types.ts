@@ -38,6 +38,11 @@ export interface IRBlock {
   isTable: boolean
   tableRows: IRTableCell[][]
   hasHeader: boolean
+  // 파싱된 단락 스타일 (프리셋 기본값 위에 오버라이드)
+  align?: 'left' | 'center' | 'right' | 'justify'
+  indent_left_hwpunit?: number
+  space_before_hwpunit?: number
+  space_after_hwpunit?: number
 }
 
 export interface ParagraphStyleData {

@@ -82,10 +82,12 @@ export async function convertToHwpx(store: StoreState) {
           ? block.runs
           : [{ text: block.text, bold: false }]
 
-      return {
-        type: eType,
-        runs,
-      }
+      const result: Record<string, unknown> = { type: eType, runs }
+      if (block.align) result.align = block.align
+      if (block.indent_left_hwpunit) result.indent_left_hwpunit = block.indent_left_hwpunit
+      if (block.space_before_hwpunit) result.space_before_hwpunit = block.space_before_hwpunit
+      if (block.space_after_hwpunit) result.space_after_hwpunit = block.space_after_hwpunit
+      return result
     })
 
     // 사용 폰트 검증

@@ -523,9 +523,24 @@ export class HwpxWriter {
 
   _paragraphXml(block) {
     const styleName = block.type || 'body';
-    const pprId = this._paraPrMap[styleName] || 0;
+    let pprId = this._paraPrMap[styleName] || 0;
     const cprId = this._charPrMap[styleName] || 0;
     const runs = block.runs || [];
+
+    // 블록별 정렬/들여쓰기가 있으면 동적 paraPr 생성
+    if (block.align || block.indent_left_hwpunit || block.space_before_hwpunit || block.space_after_hwpunit) {
+      const basePpr = this._paraPrs[pprId] || {};
+      const alignMap = { left: 'LEFT', center: 'CENTER', right: 'RIGHT', justify: 'JUSTIFY' };
+      pprId = this._paraPrs.length;
+      this._paraPrs.push({
+        id: pprId,
+        align: block.align ? (alignMap[block.align] || basePpr.align || 'JUSTIFY') : (basePpr.align || 'JUSTIFY'),
+        indent_left: block.indent_left_hwpunit || basePpr.indent_left || 0,
+        space_before: block.space_before_hwpunit || basePpr.space_before || 0,
+        space_after: block.space_after_hwpunit || basePpr.space_after || 0,
+        line_height: basePpr.line_height || 160,
+      });
+    }
 
     let xml = `<hp:p id="${randomId()}" paraPrIDRef="${pprId}" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">`;
     if (runs.length === 0) {

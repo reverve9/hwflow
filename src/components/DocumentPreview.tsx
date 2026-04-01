@@ -26,10 +26,18 @@ export function DocumentPreview() {
 
   const resolveStyle = (block: IRBlock, eType: string): ParagraphStyleData => {
     if (blockOverrides[block.id]) return blockOverrides[block.id].style
-    return preset?.paragraph_styles[eType] ?? {
+    const base = preset?.paragraph_styles[eType] ?? {
       font: '함초롬바탕', size_pt: 10, bold: false, align: 'justify',
       indent_left_hwpunit: 0, space_before_hwpunit: 0, space_after_hwpunit: 0,
       line_height_percent: 160,
+    }
+    // 파싱된 단락 스타일 오버라이드
+    return {
+      ...base,
+      ...(block.align && { align: block.align }),
+      ...(block.indent_left_hwpunit && { indent_left_hwpunit: block.indent_left_hwpunit }),
+      ...(block.space_before_hwpunit && { space_before_hwpunit: block.space_before_hwpunit }),
+      ...(block.space_after_hwpunit && { space_after_hwpunit: block.space_after_hwpunit }),
     }
   }
 
