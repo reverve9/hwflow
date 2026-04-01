@@ -230,17 +230,17 @@ export function DocumentPreview() {
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#eeeeee] p-6">
+    <div className="h-full overflow-auto bg-[#eeeeee] p-6 relative">
       {hasOriginalStyle && (
-        <div className="flex justify-center mb-3">
-          <div className="inline-flex rounded-md border border-app-border text-[11px] overflow-hidden shadow-sm">
+        <div className="sticky top-0 z-10 flex justify-end pr-2 pb-2 pointer-events-none">
+          <div className="inline-flex rounded-md border border-app-border text-[11px] overflow-hidden shadow-md pointer-events-auto bg-white/90 backdrop-blur-sm">
             <button onClick={() => setShowOriginal(false)}
-              className={`px-3 py-1 transition-colors ${!showOriginal ? 'bg-navy-600 text-white' : 'bg-white text-navy-700 hover:bg-navy-50'}`}>
-              적용 스타일
+              className={`px-3 py-1 transition-colors ${!showOriginal ? 'bg-navy-600 text-white' : 'text-navy-700 hover:bg-navy-50'}`}>
+              적용
             </button>
             <button onClick={() => setShowOriginal(true)}
-              className={`px-3 py-1 border-l border-app-border transition-colors ${showOriginal ? 'bg-navy-600 text-white' : 'bg-white text-navy-700 hover:bg-navy-50'}`}>
-              원본 스타일
+              className={`px-3 py-1 border-l border-app-border transition-colors ${showOriginal ? 'bg-navy-600 text-white' : 'text-navy-700 hover:bg-navy-50'}`}>
+              원본
             </button>
           </div>
         </div>
