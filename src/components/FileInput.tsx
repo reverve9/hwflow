@@ -4,6 +4,8 @@ import { useAppStore, irBlocksFromDicts } from '@/store/useAppStore'
 import { parseMarkdown } from '@/lib/parser_markdown'
 // @ts-ignore
 import { parseDocx } from '@/lib/parser_docx'
+// @ts-ignore
+import { parseHwpx } from '@/lib/parser_hwpx'
 import { openProjectFile } from '@/lib/projectFile'
 
 export function FileInput() {
@@ -44,8 +46,6 @@ export function FileInput() {
       let blocks: Record<string, unknown>[]
 
       if (ext === 'hwpx') {
-        // @ts-ignore
-        const { parseHwpx } = await import('@/lib/parser_hwpx')
         const arrayBuffer = await file.arrayBuffer()
         blocks = parseHwpx(arrayBuffer) as Record<string, unknown>[]
       } else if (ext === 'pdf') {
