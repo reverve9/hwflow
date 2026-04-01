@@ -35,7 +35,7 @@ function BorderIcon({ preset }: { preset: BorderPreset }) {
   const Line = ({ x1, y1, x2, y2, active }: { x1: number; y1: number; x2: number; y2: number; active: boolean }) => (
     <line x1={x1} y1={y1} x2={x2} y2={y2}
       className={active ? 'stroke-blue-500' : 'stroke-gray-300'}
-      strokeWidth={active ? '1.5' : '0.8'}
+      strokeWidth={active ? '1' : '0.7'}
       strokeDasharray={active ? undefined : '2,2'} />
   )
 
