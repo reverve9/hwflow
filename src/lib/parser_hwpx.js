@@ -13,10 +13,7 @@
 import { unzipSync } from 'fflate';
 import { XMLParser } from 'fast-xml-parser';
 
-const FONT_NAME_MAP = {
-  '함초롬바탕': 'HCR Batang',
-  '함초롬돋움': 'HCR Dotum',
-};
+import FONT_NAME_MAP from './fontMap.json';
 function browserFontName(name) {
   return FONT_NAME_MAP[name] || name;
 }
